@@ -139,8 +139,7 @@ clínica más costosa.}
 %=====================================================================
 
 Los mapas son los archivos originales del \emph{2D Path Planning Dataset} de Kaggle. Para los otros
-dos datasets, Kaggle no era accesible desde el entorno donde se corrieron los experimentos, así que se
-usaron copias públicas: una copia exacta del archivo de la mochila y una base de hospitales con la misma
+dos datasets se usaron copias públicas: una copia exacta del archivo de la mochila y una base de hospitales con la misma
 fuente (HIFLD). La Tabla~\ref{tab:datos} documenta cada una. El código también lee el CSV original de
 hospitales de Kaggle si se coloca en \texttt{datos/}.
 
@@ -157,7 +156,7 @@ Dataset (Kaggle) & Fuente usada & Preprocesamiento \\
 Archivo original de Kaggle (\texttt{archive.zip}, 646\,MB): carpetas \texttt{train},
 \texttt{validation} y \texttt{test} con un \texttt{.pt} (objeto \texttt{MapSample} de PyTorch) por
 mapa &
-Por el límite de transferencia se tomó una muestra sistemática (uno de cada $k$ archivos del zip) de
+Se tomó una muestra sistemática (uno de cada $k$ archivos del zip) de
 \valMapas{} mapas $100\times100$: \kagTrain{} de \texttt{train}, \kagVal{} de \texttt{validation} y
 \kagTestN{} de \texttt{test}. Los \texttt{.pt} se leen sin PyTorch, reconstruyendo cada tensor
 (\texttt{map}, \texttt{start}, \texttt{goal}, \texttt{path}) desde el zip. Celda $=1$ es obstáculo; el

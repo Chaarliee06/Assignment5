@@ -1,0 +1,283 @@
+{
+ "dims": [
+  10,
+  20,
+  40
+ ],
+ "presupuesto_por_d": 300,
+ "segmentos": 3,
+ "productos_d10": [
+  {
+   "productid": "furniture2",
+   "categoria": "furniture_decor",
+   "precio": 75.0,
+   "competidor": 75.0,
+   "demanda": 40.54
+  },
+  {
+   "productid": "computers6",
+   "categoria": "computers_accessories",
+   "precio": 149.9,
+   "competidor": 120.46,
+   "demanda": 34.25
+  },
+  {
+   "productid": "bed5",
+   "categoria": "bed_bath_table",
+   "precio": 205.0,
+   "competidor": 89.9,
+   "demanda": 30.8
+  },
+  {
+   "productid": "garden6",
+   "categoria": "garden_tools",
+   "precio": 53.9,
+   "competidor": 53.9,
+   "demanda": 30.25
+  },
+  {
+   "productid": "garden4",
+   "categoria": "garden_tools",
+   "precio": 53.84,
+   "competidor": 53.66,
+   "demanda": 27.71
+  },
+  {
+   "productid": "bed2",
+   "categoria": "bed_bath_table",
+   "precio": 89.9,
+   "competidor": 89.9,
+   "demanda": 25.63
+  },
+  {
+   "productid": "garden10",
+   "categoria": "garden_tools",
+   "precio": 53.9,
+   "competidor": 53.9,
+   "demanda": 24.44
+  },
+  {
+   "productid": "watches6",
+   "categoria": "watches_gifts",
+   "precio": 130.62,
+   "competidor": 130.62,
+   "demanda": 23.07
+  },
+  {
+   "productid": "watches4",
+   "categoria": "watches_gifts",
+   "precio": 105.32,
+   "competidor": 117.9,
+   "demanda": 22.5
+  },
+  {
+   "productid": "health10",
+   "categoria": "health_beauty",
+   "precio": 50.71,
+   "competidor": 23.99,
+   "demanda": 22.14
+  }
+ ],
+ "lam_comparan_precio": 0.15339053438349687,
+ "competidor_relativo": [
+  1.0,
+  0.804,
+  0.439,
+  1.0,
+  0.997,
+  1.0,
+  1.0,
+  1.0,
+  1.119,
+  0.473
+ ],
+ "ingreso_precios_actuales": 24826.219836811597,
+ "tabla": [
+  {
+   "d": 10,
+   "metodo": "GA mem\u00e9tico (extra)",
+   "ingreso": 27328.8915,
+   "ingreso_std": 61.8915,
+   "brecha": 0.1073,
+   "brecha_std": 0.2262,
+   "tiempo": 0.0745,
+   "memoria": 0.0552
+  },
+  {
+   "d": 10,
+   "metodo": "GA real",
+   "ingreso": 27351.3209,
+   "ingreso_std": 21.7823,
+   "brecha": 0.0253,
+   "brecha_std": 0.0796,
+   "tiempo": 0.0919,
+   "memoria": 0.0535
+  },
+  {
+   "d": 10,
+   "metodo": "Gradiente + reinicios",
+   "ingreso": 27085.8104,
+   "ingreso_std": 152.3262,
+   "brecha": 0.9958,
+   "brecha_std": 0.5568,
+   "tiempo": 0.0327,
+   "memoria": 0.0512
+  },
+  {
+   "d": 10,
+   "metodo": "Hill Climbing",
+   "ingreso": 27240.5355,
+   "ingreso_std": 84.4925,
+   "brecha": 0.4303,
+   "brecha_std": 0.3088,
+   "tiempo": 0.0402,
+   "memoria": 0.0495
+  },
+  {
+   "d": 10,
+   "metodo": "PSO",
+   "ingreso": 27262.5038,
+   "ingreso_std": 110.797,
+   "brecha": 0.35,
+   "brecha_std": 0.405,
+   "tiempo": 0.0321,
+   "memoria": 0.0495
+  },
+  {
+   "d": 10,
+   "metodo": "Recocido simulado",
+   "ingreso": 27208.5568,
+   "ingreso_std": 161.7225,
+   "brecha": 0.5472,
+   "brecha_std": 0.5911,
+   "tiempo": 0.0404,
+   "memoria": 0.0499
+  },
+  {
+   "d": 20,
+   "metodo": "GA mem\u00e9tico (extra)",
+   "ingreso": 76414.0584,
+   "ingreso_std": 248.6814,
+   "brecha": 0.312,
+   "brecha_std": 0.3244,
+   "tiempo": 0.1326,
+   "memoria": 0.1045
+  },
+  {
+   "d": 20,
+   "metodo": "GA real",
+   "ingreso": 76232.1823,
+   "ingreso_std": 280.5149,
+   "brecha": 0.5493,
+   "brecha_std": 0.366,
+   "tiempo": 0.1894,
+   "memoria": 0.0999
+  },
+  {
+   "d": 20,
+   "metodo": "Gradiente + reinicios",
+   "ingreso": 59973.53,
+   "ingreso_std": 2637.0703,
+   "brecha": 21.76,
+   "brecha_std": 3.4403,
+   "tiempo": 0.0683,
+   "memoria": 0.1015
+  },
+  {
+   "d": 20,
+   "metodo": "Hill Climbing",
+   "ingreso": 76293.3392,
+   "ingreso_std": 327.0307,
+   "brecha": 0.4695,
+   "brecha_std": 0.4266,
+   "tiempo": 0.0839,
+   "memoria": 0.1
+  },
+  {
+   "d": 20,
+   "metodo": "PSO",
+   "ingreso": 71933.0233,
+   "ingreso_std": 2562.3087,
+   "brecha": 6.1579,
+   "brecha_std": 3.3427,
+   "tiempo": 0.0672,
+   "memoria": 0.0983
+  },
+  {
+   "d": 20,
+   "metodo": "Recocido simulado",
+   "ingreso": 76487.7335,
+   "ingreso_std": 262.3595,
+   "brecha": 0.2159,
+   "brecha_std": 0.3423,
+   "tiempo": 0.0862,
+   "memoria": 0.1031
+  },
+  {
+   "d": 40,
+   "metodo": "GA mem\u00e9tico (extra)",
+   "ingreso": 287247.4586,
+   "ingreso_std": 7461.5899,
+   "brecha": 2.6661,
+   "brecha_std": 2.5284,
+   "tiempo": 0.2793,
+   "memoria": 0.2174
+  },
+  {
+   "d": 40,
+   "metodo": "GA real",
+   "ingreso": 288762.4878,
+   "ingreso_std": 6761.6848,
+   "brecha": 2.1527,
+   "brecha_std": 2.2912,
+   "tiempo": 0.4209,
+   "memoria": 0.203
+  },
+  {
+   "d": 40,
+   "metodo": "Gradiente + reinicios",
+   "ingreso": 135063.3318,
+   "ingreso_std": 9569.0305,
+   "brecha": 54.2337,
+   "brecha_std": 3.2425,
+   "tiempo": 0.1791,
+   "memoria": 0.2022
+  },
+  {
+   "d": 40,
+   "metodo": "Hill Climbing",
+   "ingreso": 265696.2264,
+   "ingreso_std": 10388.0293,
+   "brecha": 9.9687,
+   "brecha_std": 3.52,
+   "tiempo": 0.2114,
+   "memoria": 0.2033
+  },
+  {
+   "d": 40,
+   "metodo": "PSO",
+   "ingreso": 233465.7088,
+   "ingreso_std": 23167.4251,
+   "brecha": 20.8901,
+   "brecha_std": 7.8503,
+   "tiempo": 0.1795,
+   "memoria": 0.1962
+  },
+  {
+   "d": 40,
+   "metodo": "Recocido simulado",
+   "ingreso": 248359.9966,
+   "ingreso_std": 41518.1884,
+   "brecha": 15.8431,
+   "brecha_std": 14.0685,
+   "tiempo": 0.2157,
+   "memoria": 0.2084
+  }
+ ],
+ "optimos_locales": {
+  "n_inicios": 100,
+  "valores_distintos": 16,
+  "min": 26810.313954624984,
+  "max": 27358.254762234967
+ }
+}

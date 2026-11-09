@@ -1,0 +1,134 @@
+{
+ "caso_enunciado": {
+  "v": [
+   10.0,
+   6.0,
+   3.0
+  ],
+  "costos": [
+   0.45,
+   0.25,
+   0.1
+  ],
+  "B": 0.6,
+  "optimo_bb": 13.0,
+  "zonas_bb": [
+   1,
+   3
+  ],
+  "nodos": 11,
+  "optimo_aco": 13.0,
+  "probabilidades": {
+   "zona 1": 0.45,
+   "zona 3": 0.1
+  }
+ },
+ "tabla": [
+  {
+   "Z": 30,
+   "semilla": 4.5,
+   "optimo": 34.167,
+   "nodos_bb": 209.3,
+   "optimo_probado": 1.0,
+   "t_bb": 0.00025,
+   "aco": 34.157,
+   "brecha_aco_pct": 0.02859,
+   "t_aco": 0.1852,
+   "mem_bb_mb": 0.00864,
+   "mem_aco_mb": 0.00501
+  },
+  {
+   "Z": 60,
+   "semilla": 4.5,
+   "optimo": 67.395,
+   "nodos_bb": 279.7,
+   "optimo_probado": 1.0,
+   "t_bb": 0.00052,
+   "aco": 67.393,
+   "brecha_aco_pct": 0.00297,
+   "t_aco": 0.38062,
+   "mem_bb_mb": 0.01167,
+   "mem_aco_mb": 0.00722
+  },
+  {
+   "Z": 90,
+   "semilla": 4.5,
+   "optimo": 102.847,
+   "nodos_bb": 654.3,
+   "optimo_probado": 1.0,
+   "t_bb": 0.00147,
+   "aco": 102.831,
+   "brecha_aco_pct": 0.01528,
+   "t_aco": 0.57375,
+   "mem_bb_mb": 0.02001,
+   "mem_aco_mb": 0.00924
+  },
+  {
+   "Z": 120,
+   "semilla": 4.5,
+   "optimo": 138.771,
+   "nodos_bb": 649.3,
+   "optimo_probado": 1.0,
+   "t_bb": 0.00213,
+   "aco": 138.764,
+   "brecha_aco_pct": 0.00503,
+   "t_aco": 0.80902,
+   "mem_bb_mb": 0.03648,
+   "mem_aco_mb": 0.01139
+  }
+ ],
+ "tabla_std": [
+  {
+   "Z": 30,
+   "semilla": 3.02765,
+   "optimo": 4.34527,
+   "nodos_bb": 146.85825,
+   "optimo_probado": 0.0,
+   "t_bb": 0.00011,
+   "aco": 4.3433,
+   "brecha_aco_pct": 0.0904,
+   "t_aco": 0.01651,
+   "mem_bb_mb": 0.0,
+   "mem_aco_mb": 0.0
+  },
+  {
+   "Z": 60,
+   "semilla": 3.02765,
+   "optimo": 3.58794,
+   "nodos_bb": 188.1678,
+   "optimo_probado": 0.0,
+   "t_bb": 0.00017,
+   "aco": 3.58795,
+   "brecha_aco_pct": 0.00939,
+   "t_aco": 0.01173,
+   "mem_bb_mb": 0.0,
+   "mem_aco_mb": 0.0
+  },
+  {
+   "Z": 90,
+   "semilla": 3.02765,
+   "optimo": 5.02125,
+   "nodos_bb": 379.23462,
+   "optimo_probado": 0.0,
+   "t_bb": 0.00056,
+   "aco": 5.0148,
+   "brecha_aco_pct": 0.03075,
+   "t_aco": 0.01915,
+   "mem_bb_mb": 0.0,
+   "mem_aco_mb": 0.0
+  },
+  {
+   "Z": 120,
+   "semilla": 3.02765,
+   "optimo": 2.59946,
+   "nodos_bb": 409.7094,
+   "optimo_probado": 0.0,
+   "t_bb": 0.00077,
+   "aco": 2.59832,
+   "brecha_aco_pct": 0.01075,
+   "t_aco": 0.02598,
+   "mem_bb_mb": 0.0,
+   "mem_aco_mb": 0.0
+  }
+ ]
+}

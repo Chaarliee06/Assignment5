@@ -1,0 +1,16 @@
+# Entorno de Python
+venv/
+.venv/
+
+# Datos de Kaggle (se descargan aparte, ver code/data/LEEME.txt)
+code/data/*.csv
+code/data/sintetico/
+
+# Auxiliares de LaTeX
+reporte/*.aux
+reporte/*.log
+reporte/*.out
+reporte/*.toc
+reporte/*.fls
+reporte/*.fdb_latexmk
+reporte/*.synctex.gz

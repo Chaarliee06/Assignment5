@@ -1,0 +1,334 @@
+{
+ "diferencia_max_valor": 0.0,
+ "memoria_mb": {
+  "minimax": 0.00109100341796875,
+  "alfa-beta (buen orden)": 0.0012359619140625,
+  "MCTS (500)": 0.2272491455078125
+ },
+ "busqueda": [
+  {
+   "n": 4,
+   "prof": 2,
+   "metodo": "alfa-beta (buen orden)",
+   "nodos": 10.4,
+   "nodos_std": 1.17379,
+   "tiempo": 3e-05
+  },
+  {
+   "n": 4,
+   "prof": 2,
+   "metodo": "alfa-beta (orden aleatorio)",
+   "nodos": 12.4,
+   "nodos_std": 2.63312,
+   "tiempo": 2e-05
+  },
+  {
+   "n": 4,
+   "prof": 2,
+   "metodo": "minimax",
+   "nodos": 15.9,
+   "nodos_std": 2.02485,
+   "tiempo": 2e-05
+  },
+  {
+   "n": 4,
+   "prof": 4,
+   "metodo": "alfa-beta (buen orden)",
+   "nodos": 60.3,
+   "nodos_std": 11.89818,
+   "tiempo": 0.00017
+  },
+  {
+   "n": 4,
+   "prof": 4,
+   "metodo": "alfa-beta (orden aleatorio)",
+   "nodos": 102.0,
+   "nodos_std": 27.45501,
+   "tiempo": 0.00013
+  },
+  {
+   "n": 4,
+   "prof": 4,
+   "metodo": "minimax",
+   "nodos": 257.3,
+   "nodos_std": 50.95543,
+   "tiempo": 0.00029
+  },
+  {
+   "n": 4,
+   "prof": 6,
+   "metodo": "alfa-beta (buen orden)",
+   "nodos": 356.2,
+   "nodos_std": 101.00143,
+   "tiempo": 0.00098
+  },
+  {
+   "n": 4,
+   "prof": 6,
+   "metodo": "alfa-beta (orden aleatorio)",
+   "nodos": 900.8,
+   "nodos_std": 227.07845,
+   "tiempo": 0.00116
+  },
+  {
+   "n": 4,
+   "prof": 6,
+   "metodo": "minimax",
+   "nodos": 4043.0,
+   "nodos_std": 911.0997,
+   "tiempo": 0.00438
+  },
+  {
+   "n": 4,
+   "prof": 8,
+   "metodo": "alfa-beta (buen orden)",
+   "nodos": 1411.3,
+   "nodos_std": 393.95743,
+   "tiempo": 0.00382
+  },
+  {
+   "n": 4,
+   "prof": 8,
+   "metodo": "alfa-beta (orden aleatorio)",
+   "nodos": 4668.1,
+   "nodos_std": 1606.62804,
+   "tiempo": 0.0059
+  },
+  {
+   "n": 4,
+   "prof": 8,
+   "metodo": "minimax",
+   "nodos": 63874.0,
+   "nodos_std": 14879.09287,
+   "tiempo": 0.06792
+  },
+  {
+   "n": 5,
+   "prof": 2,
+   "metodo": "alfa-beta (buen orden)",
+   "nodos": 10.3,
+   "nodos_std": 1.56702,
+   "tiempo": 3e-05
+  },
+  {
+   "n": 5,
+   "prof": 2,
+   "metodo": "alfa-beta (orden aleatorio)",
+   "nodos": 13.3,
+   "nodos_std": 2.66875,
+   "tiempo": 2e-05
+  },
+  {
+   "n": 5,
+   "prof": 2,
+   "metodo": "minimax",
+   "nodos": 16.8,
+   "nodos_std": 1.54919,
+   "tiempo": 2e-05
+  },
+  {
+   "n": 5,
+   "prof": 4,
+   "metodo": "alfa-beta (buen orden)",
+   "nodos": 69.6,
+   "nodos_std": 16.88655,
+   "tiempo": 0.00019
+  },
+  {
+   "n": 5,
+   "prof": 4,
+   "metodo": "alfa-beta (orden aleatorio)",
+   "nodos": 130.3,
+   "nodos_std": 35.03982,
+   "tiempo": 0.00017
+  },
+  {
+   "n": 5,
+   "prof": 4,
+   "metodo": "minimax",
+   "nodos": 289.1,
+   "nodos_std": 49.32083,
+   "tiempo": 0.00032
+  },
+  {
+   "n": 5,
+   "prof": 6,
+   "metodo": "alfa-beta (buen orden)",
+   "nodos": 385.4,
+   "nodos_std": 143.98241,
+   "tiempo": 0.00107
+  },
+  {
+   "n": 5,
+   "prof": 6,
+   "metodo": "alfa-beta (orden aleatorio)",
+   "nodos": 880.1,
+   "nodos_std": 232.53552,
+   "tiempo": 0.00114
+  },
+  {
+   "n": 5,
+   "prof": 6,
+   "metodo": "minimax",
+   "nodos": 4864.2,
+   "nodos_std": 1043.55949,
+   "tiempo": 0.00531
+  },
+  {
+   "n": 5,
+   "prof": 8,
+   "metodo": "alfa-beta (buen orden)",
+   "nodos": 1771.4,
+   "nodos_std": 732.10886,
+   "tiempo": 0.0049
+  },
+  {
+   "n": 5,
+   "prof": 8,
+   "metodo": "alfa-beta (orden aleatorio)",
+   "nodos": 5996.0,
+   "nodos_std": 2179.64747,
+   "tiempo": 0.00776
+  },
+  {
+   "n": 6,
+   "prof": 2,
+   "metodo": "alfa-beta (buen orden)",
+   "nodos": 10.0,
+   "nodos_std": 1.49071,
+   "tiempo": 3e-05
+  },
+  {
+   "n": 6,
+   "prof": 2,
+   "metodo": "alfa-beta (orden aleatorio)",
+   "nodos": 13.0,
+   "nodos_std": 1.63299,
+   "tiempo": 2e-05
+  },
+  {
+   "n": 6,
+   "prof": 2,
+   "metodo": "minimax",
+   "nodos": 16.8,
+   "nodos_std": 1.54919,
+   "tiempo": 2e-05
+  },
+  {
+   "n": 6,
+   "prof": 4,
+   "metodo": "alfa-beta (buen orden)",
+   "nodos": 60.6,
+   "nodos_std": 9.3832,
+   "tiempo": 0.00018
+  },
+  {
+   "n": 6,
+   "prof": 4,
+   "metodo": "alfa-beta (orden aleatorio)",
+   "nodos": 117.3,
+   "nodos_std": 29.87028,
+   "tiempo": 0.00015
+  },
+  {
+   "n": 6,
+   "prof": 4,
+   "metodo": "minimax",
+   "nodos": 299.5,
+   "nodos_std": 53.4088,
+   "tiempo": 0.00033
+  },
+  {
+   "n": 6,
+   "prof": 6,
+   "metodo": "alfa-beta (buen orden)",
+   "nodos": 311.0,
+   "nodos_std": 83.83184,
+   "tiempo": 0.00091
+  },
+  {
+   "n": 6,
+   "prof": 6,
+   "metodo": "alfa-beta (orden aleatorio)",
+   "nodos": 998.6,
+   "nodos_std": 282.6636,
+   "tiempo": 0.0013
+  },
+  {
+   "n": 6,
+   "prof": 6,
+   "metodo": "minimax",
+   "nodos": 5333.6,
+   "nodos_std": 1270.30129,
+   "tiempo": 0.00587
+  },
+  {
+   "n": 6,
+   "prof": 8,
+   "metodo": "alfa-beta (buen orden)",
+   "nodos": 1394.7,
+   "nodos_std": 656.91807,
+   "tiempo": 0.00409
+  },
+  {
+   "n": 6,
+   "prof": 8,
+   "metodo": "alfa-beta (orden aleatorio)",
+   "nodos": 7288.7,
+   "nodos_std": 3010.82591,
+   "tiempo": 0.00945
+  }
+ ],
+ "partidas": [
+  {
+   "ladron": "MCTS 500",
+   "guardia": "MCTS 500",
+   "utilidad": 1.3,
+   "utilidad_std": 3.199,
+   "escapa": 0.2,
+   "atrapado": 0.0,
+   "t_ladron": 0.0732,
+   "t_guardia": 0.0702
+  },
+  {
+   "ladron": "MCTS 500",
+   "guardia": "alfa-beta p=4",
+   "utilidad": 0.3,
+   "utilidad_std": 0.9487,
+   "escapa": 0.1,
+   "atrapado": 0.0,
+   "t_ladron": 0.0708,
+   "t_guardia": 0.0023
+  },
+  {
+   "ladron": "alfa-beta p=4",
+   "guardia": "MCTS 500",
+   "utilidad": 2.2,
+   "utilidad_std": 5.2026,
+   "escapa": 0.2,
+   "atrapado": 0.0,
+   "t_ladron": 0.0016,
+   "t_guardia": 0.0789
+  },
+  {
+   "ladron": "alfa-beta p=4",
+   "guardia": "aleatorio",
+   "utilidad": 4.5,
+   "utilidad_std": 6.6207,
+   "escapa": 0.4,
+   "atrapado": 0.0,
+   "t_ladron": 0.0019,
+   "t_guardia": 0.0
+  },
+  {
+   "ladron": "alfa-beta p=4",
+   "guardia": "alfa-beta p=4",
+   "utilidad": 0.9,
+   "utilidad_std": 2.0248,
+   "escapa": 0.2,
+   "atrapado": 0.0,
+   "t_ladron": 0.0016,
+   "t_guardia": 0.0022
+  }
+ ]
+}

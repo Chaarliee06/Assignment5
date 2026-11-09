@@ -1,0 +1,151 @@
+{
+ "T": 20000,
+ "p_estrella": 0.45,
+ "semillas": 10,
+ "bandits": [
+  {
+   "p": 0.3,
+   "algoritmo": "Thompson",
+   "regret": 609.7,
+   "regret_std": 81.6007,
+   "robo": 0.9909,
+   "robo_final": 0.9991,
+   "tiempo": 0.1046,
+   "memoria": 0.3216
+  },
+  {
+   "p": 0.3,
+   "algoritmo": "UCB1",
+   "regret": 4438.6,
+   "regret_std": 212.2651,
+   "robo": 0.9344,
+   "robo_final": 0.9813,
+   "tiempo": 0.0812,
+   "memoria": 0.3076
+  },
+  {
+   "p": 0.3,
+   "algoritmo": "e-greedy",
+   "regret": 5075.9,
+   "regret_std": 654.0643,
+   "robo": 0.9265,
+   "robo_final": 0.9325,
+   "tiempo": 0.0376,
+   "memoria": 0.3075
+  },
+  {
+   "p": 0.6,
+   "algoritmo": "Thompson",
+   "regret": 911.0,
+   "regret_std": 165.4254,
+   "robo": 0.0053,
+   "robo_final": 0.0007,
+   "tiempo": 0.1028,
+   "memoria": 0.3216
+  },
+  {
+   "p": 0.6,
+   "algoritmo": "UCB1",
+   "regret": 5695.3,
+   "regret_std": 473.5561,
+   "robo": 0.0396,
+   "robo_final": 0.0164,
+   "tiempo": 0.0833,
+   "memoria": 0.3076
+  },
+  {
+   "p": 0.6,
+   "algoritmo": "e-greedy",
+   "regret": 2755.1,
+   "regret_std": 109.622,
+   "robo": 0.0341,
+   "robo_final": 0.0334,
+   "tiempo": 0.0401,
+   "memoria": 0.3075
+  }
+ ],
+ "stackelberg_cobertura": [
+  0.6154,
+  0.3077,
+  0.0769
+ ],
+ "umbrales": [
+  0.45,
+  0.25,
+  0.1
+ ],
+ "ppo_distribucion_media": [
+  [
+   0.49300000071525574,
+   0.2849999964237213,
+   0.22100000083446503
+  ],
+  [
+   0.6179999709129333,
+   0.21199999749660492,
+   0.17000000178813934
+  ],
+  [
+   0.44600000977516174,
+   0.4000000059604645,
+   0.15399999916553497
+  ]
+ ],
+ "ppo_cobertura_media": [
+  0.5189999938011169,
+  0.29899999499320984,
+  0.18199999630451202
+ ],
+ "guardia": [
+  {
+   "politica": "PPO (aprendida)",
+   "robo": 0.1071,
+   "robo_std": 0.0288,
+   "robo_final": 0.0326,
+   "robo_final_std": 0.0033,
+   "perdida_final": 0.1126,
+   "perdida_final_std": 0.0223,
+   "tiempo": 2.8794
+  },
+  {
+   "politica": "Stackelberg (mixta)",
+   "robo": 0.0486,
+   "robo_std": 0.0094,
+   "robo_final": 0.034,
+   "robo_final_std": 0.0101,
+   "perdida_final": 0.1075,
+   "perdida_final_std": 0.0287,
+   "tiempo": 0.2131
+  },
+  {
+   "politica": "fijo en zona 1",
+   "robo": 0.8743,
+   "robo_std": 0.0078,
+   "robo_final": 0.8831,
+   "robo_final_std": 0.0085,
+   "perdida_final": 4.9641,
+   "perdida_final_std": 0.0585,
+   "tiempo": 0.0762
+  },
+  {
+   "politica": "rotaci\u00f3n 1\u21922\u21923",
+   "robo": 0.8637,
+   "robo_std": 0.0168,
+   "robo_final": 0.881,
+   "robo_final_std": 0.0053,
+   "perdida_final": 7.0878,
+   "perdida_final_std": 0.2649,
+   "tiempo": 0.0764
+  },
+  {
+   "politica": "uniforme",
+   "robo": 0.5913,
+   "robo_std": 0.1571,
+   "robo_final": 0.607,
+   "robo_final_std": 0.2085,
+   "perdida_final": 4.0174,
+   "perdida_final_std": 1.4101,
+   "tiempo": 0.0912
+  }
+ ]
+}

@@ -1,0 +1,41 @@
+{
+ "equipo": {
+  "fecha": "2026-11-09 14:19",
+  "sistema": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "python": "3.13.15",
+  "procesador": "Apple M5 Pro",
+  "maquina": "arm64",
+  "memoria_gb": 24.0,
+  "numpy": "2.5.4",
+  "pandas": "3.1.1",
+  "sklearn": "1.9.1",
+  "matplotlib": "3.11.2",
+  "torch": "2.15.0",
+  "stable_baselines3": "2.9.2",
+  "gymnasium": "1.4.0"
+ },
+ "datos": {
+  "retail_price.csv": {
+   "url": "https://www.kaggle.com/datasets/suddharshan/retail-price-optimization",
+   "existe": true,
+   "mb": 0.12,
+   "modificado": "2022-01-25",
+   "fuente": "Kaggle"
+  },
+  "online_retail_II.csv": {
+   "url": "https://www.kaggle.com/datasets/mashlyn/online-retail-ii-uci",
+   "existe": true,
+   "mb": 90.46,
+   "modificado": "2019-12-02",
+   "fuente": "Kaggle"
+  }
+ },
+ "rapido": false,
+ "tiempos_s": {
+  "parte1": 39.6,
+  "parte2": 43.0,
+  "parte3": 28.2,
+  "parte4": 4.5,
+  "parte5": 45.1
+ }
+}

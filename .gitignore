@@ -3,25 +3,7 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 
-# LaTeX (auxiliares y la copia de figuras/ que hace empaquetar.sh)
-reporte/*.aux
-reporte/*.log
-reporte/*.out
-reporte/*.toc
-reporte/*.synctex.gz
-reporte/*.fls
-reporte/*.fdb_latexmk
-reporte/figuras/
-
-# zips de entrega (los arma empaquetar.sh)
-entrega/
-
-# muestra de mapas de Kaggle: se recrea con
-#   python -m experiments.extraer_mapas_kaggle archive.zip
-datos/mapas_kaggle/
-archive.zip
-
-# respaldos de corridas anteriores
-resultados/*_a.*
-resultados/*_b.*
-resultados/*_reproducidos.*
+# Entornos virtuales y archivos del sistema
+venv/
+.venv/
+.DS_Store
