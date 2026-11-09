@@ -1,0 +1,31 @@
+{
+  "mapas": 300,
+  "filas": 600000,
+  "rasgos": [
+    "octil",
+    "euclid",
+    "frac_bloq_linea",
+    "cruces_linea",
+    "mult_viento_linea",
+    "octil_x_viento",
+    "dens_local_n",
+    "dens_local_meta",
+    "abs_dr",
+    "abs_dc",
+    "dens_global",
+    "m_min"
+  ],
+  "t_datos_s": 5.177405699999895,
+  "mse": {
+    "t_fit_s": 10.671435288000112,
+    "mae_ratio": 0.020179035078269777,
+    "frac_sobreestima": 0.55395,
+    "max_sobre": 2.080222071063815
+  },
+  "q02": {
+    "t_fit_s": 18.159497698999985,
+    "mae_ratio": 0.029091592730035542,
+    "frac_sobreestima": 0.2053,
+    "max_sobre": 1.2288331147118177
+  }
+}

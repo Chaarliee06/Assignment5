@@ -1,0 +1,797 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[spanish,provide=*]{babel}
+\usepackage{amsmath,amsfonts,amssymb,amsthm}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{float}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{xurl}
+\usepackage{makecell}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{{figuras/}{../figuras/}}
+\floatname{algorithm}{Algoritmo}
+\renewcommand{\algorithmicrequire}{\textbf{Entrada:}}
+\renewcommand{\algorithmicensure}{\textbf{Salida:}}
+\newtheorem{prop}{Proposición}
+\theoremstyle{remark}
+\newtheorem*{obs}{Observación}
+\captionsetup{font=small,labelfont=bf}
+\AtBeginDocument{\renewcommand{\tablename}{Tabla}\renewcommand{\listtablename}{Índice de tablas}}
+\setlist{nosep}
+\newcommand{\oct}{\operatorname{oct}}
+
+\input{numeros.tex}
+
+\title{\textbf{Análisis y Diseño de Algoritmos Avanzados}\\[0.2cm]
+\large Capítulo 5 --- Problema 1: Flota de drones para respuesta a desastres}
+\author{Carlos Emiliano Nava Flores \quad A00842650\\
+Luis Enrique Castillo Carrillo \quad A00842390\\[0.15cm]
+Departamento de Ciencias Computacionales}
+\date{8 de noviembre de 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Tras un sismo, una flota de drones lleva kits médicos desde un depósito a clínicas de campo.
+La ciudad se modela como un grafo dirigido sobre una rejilla $N\times N$ con zonas de exclusión
+aérea y viento, de modo que $c(u,v)\neq c(v,u)$ (asimetría media de \asimMedia\,\% en las matrices
+de costos). Se implementaron y compararon, en Python, cuatro bloques: (i) rutas con UCS, A*, IDA*
+(clásico e IDA*-CR) con la heurística octil$\times$costo mínimo, cuya admisibilidad y consistencia se
+demuestran, y una heurística aprendida entrenada en mapas del \emph{2D Path Planning Dataset};
+(ii) carga útil con backtracking por máscaras de bits, ramificación y acotamiento (B\&B) con cota
+fraccional y \emph{meet-in-the-middle} (MITM), validados contra las \kagInst{} instancias del
+\emph{Knapsack Problem Data} (\kagDisc{} discrepancias); (iii) asignación de plataformas y turnos
+como CSP con forward checking, AC-3 y MRV/LCV; y (iv) el orden de visita como TSP asimétrico,
+resuelto exactamente con B\&B (cota MST) y Held--Karp para $K\le 12$, y con recocido simulado,
+búsqueda tabú, GA con OX, ACO (MMAS), una hiperheurística UCB y dos híbridos para
+$K\in\{12,25,50,100\}$ y $N\in\{50,100,150,200\}$, con 10 semillas y el óptimo exacto (HiGHS con
+cortes DFJ) como referencia. Para los puntos extra se agregan un panel interactivo, la heurística
+aprendida con verificación empírica de la cota $w\cdot C^*$ y tres híbridos búsqueda--bioinspirados.
+\end{abstract}
+
+\tableofcontents
+
+%=====================================================================
+\section{Modelo del problema}
+%=====================================================================
+
+\subsection{La ciudad como grafo dirigido}
+La ciudad es una rejilla $N\times N$. Cada celda libre es un vértice; las celdas bloqueadas son
+zonas de exclusión aérea (edificios colapsados, humo, helicópteros de rescate). Un dron puede
+moverse a sus 8 vecinas; no se permiten diagonales que ``corten esquina'' junto a una celda
+bloqueada. El viento es un campo suave $\mathbf w:\text{celdas}\to\mathbb R^2$ con
+$\|\mathbf w\|\le 1$: un viento dominante de dirección aleatoria más una turbulencia (ruido blanco
+filtrado con una gaussiana). El costo de la arista $u\to v$ es
+\begin{equation}\label{eq:costo}
+  c(u,v)=\ell(u,v)\,\bigl(1-\alpha\,\langle \bar{\mathbf w}(u,v),\hat{\mathbf d}(u,v)\rangle\bigr),
+  \qquad \bar{\mathbf w}=\tfrac12(\mathbf w(u)+\mathbf w(v)),
+\end{equation}
+donde $\ell\in\{1,\sqrt2\}$ es la longitud del movimiento, $\hat{\mathbf d}$ su dirección unitaria y
+$\alpha=0.5$. Con viento a favor el costo baja y con viento en contra sube, así que
+$c(u,v)-c(v,u)=-2\alpha\,\ell\,\langle\bar{\mathbf w},\hat{\mathbf d}\rangle\neq0$ en general. El
+multiplicador queda en $[1-\alpha,1+\alpha]=[0.5,1.5]$. Definimos el \emph{costo mínimo por unidad}
+\[
+  m_{\min}=\min_{(u,v)\in E}\frac{c(u,v)}{\ell(u,v)}>0 ,
+\]
+que se calcula exactamente al construir el grafo. En las ciudades de prueba vale \mminA, \mminB,
+\mminC{} y \mminD{} para $N=50$, 100, 150 y 200.
+
+\subsection{Heurística octil por costo mínimo}
+Sea $\oct(n,g)=\Delta_{\max}+(\sqrt2-1)\Delta_{\min}$ con $\Delta_{\max},\Delta_{\min}$ el mayor y el
+menor de $|r_n-r_g|$ y $|c_n-c_g|$. La heurística pedida es
+\begin{equation}\label{eq:h}
+  h(n)=m_{\min}\cdot \oct(n,g).
+\end{equation}
+
+\begin{prop}\label{prop:h}
+$h$ es consistente y admisible en el grafo dirigido de~\eqref{eq:costo}.
+\end{prop}
+\begin{proof}
+\emph{Consistencia.} La distancia octil es la distancia de camino más corto en la rejilla
+8-conexa sin obstáculos, luego cumple la desigualdad del triángulo; además el movimiento $u\to v$
+tiene longitud octil exactamente $\ell(u,v)$. Por tanto $\oct(u,g)\le \ell(u,v)+\oct(v,g)$.
+Multiplicando por $m_{\min}>0$ y usando $m_{\min}\,\ell(u,v)\le c(u,v)$ (definición de $m_{\min}$):
+$h(u)\le m_{\min}\ell(u,v)+h(v)\le c(u,v)+h(v)$ para toda arista. \emph{Admisibilidad.} Sea
+$n=v_0,\dots,v_k=g$ un camino óptimo. Sumando la consistencia a lo largo del camino,
+$h(n)\le\sum_i c(v_i,v_{i+1})+h(g)=h^*(n)$ porque $h(g)=0$.
+\end{proof}
+
+\begin{obs}
+Los obstáculos sólo pueden alargar los caminos, así que la prueba no depende de ellos. El precio de
+la garantía es que $h$ es débil cuando el viento es fuerte: con $m_{\min}$ entre 0.5 y 0.6, en los mapas
+de prueba el máximo de $h/h^*$ sobre el camino óptimo fue en promedio \hWpA. Eso motiva la heurística
+aprendida (sección~\ref{sec:aprendida}).
+\end{obs}
+
+\subsection{Escenario integrado}
+El depósito y las clínicas son hospitales reales de la zona de Los Ángeles
+(\S\ref{sec:datos}): se proyectan $(\text{lat},\text{lon})$ a la rejilla y cada uno se mueve a la
+celda libre más cercana de la componente conexa mayor, sin repetir celdas. El depósito es el
+LAC+USC Medical Center. Las zonas de exclusión se generan con el mismo procedimiento que los mapas
+del dataset de Kaggle (ruido binario y apertura morfológica, \S\ref{sec:datos}), a $100\times100$ y
+reescaladas a $N\times N$ para que el área bloqueada no dependa de $N$. La
+Figura~\ref{fig:mision} muestra la misión de ejemplo con $N=100$ y $K=25$.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig_mision.png}
+\caption{Misión de ejemplo ($N=100$, $K=25$). (a) Zonas de exclusión (gris), viento (flechas),
+depósito (estrella) y la ruta óptima del ATSP dibujada como los caminos de A* de cada tramo.
+(b) Nodos expandidos por UCS, A* y A* con la heurística aprendida en la consulta del depósito a la
+clínica más costosa.}
+\label{fig:mision}
+\end{figure}
+
+%=====================================================================
+\section{Datasets}\label{sec:datos}
+%=====================================================================
+
+Los mapas son los archivos originales del \emph{2D Path Planning Dataset} de Kaggle. Para los otros
+dos datasets, Kaggle no era accesible desde el entorno donde se corrieron los experimentos, así que se
+usaron copias públicas: una copia exacta del archivo de la mochila y una base de hospitales con la misma
+fuente (HIFLD). La Tabla~\ref{tab:datos} documenta cada una. El código también lee el CSV original de
+hospitales de Kaggle si se coloca en \texttt{datos/}.
+
+\begin{table}[H]
+\centering\small
+\caption{Datasets usados. Fechas de descarga: 8 de noviembre de 2026 (mapas) y 3 de noviembre de
+2026 (hospitales y mochila).}\label{tab:datos}
+\begin{tabular}{p{2.7cm}p{5.3cm}p{7.6cm}}
+\toprule
+Dataset (Kaggle) & Fuente usada & Preprocesamiento \\
+\midrule
+2D Path Planning Dataset\newline
+\scriptsize\url{kaggle.com/datasets/dcaffo/2dpathplanningdataset} &
+Archivo original de Kaggle (\texttt{archive.zip}, 646\,MB): carpetas \texttt{train},
+\texttt{validation} y \texttt{test} con un \texttt{.pt} (objeto \texttt{MapSample} de PyTorch) por
+mapa &
+Por el límite de transferencia se tomó una muestra sistemática (uno de cada $k$ archivos del zip) de
+\valMapas{} mapas $100\times100$: \kagTrain{} de \texttt{train}, \kagVal{} de \texttt{validation} y
+\kagTestN{} de \texttt{test}. Los \texttt{.pt} se leen sin PyTorch, reconstruyendo cada tensor
+(\texttt{map}, \texttt{start}, \texttt{goal}, \texttt{path}) desde el zip. Celda $=1$ es obstáculo; el
+camino de referencia es el de D* Lite. Se entrena con \hMapas{} mapas de \texttt{train} y se prueba
+con \hTest{} de \texttt{test} (muestras con semilla 0). \\
+\addlinespace
+US Hospital Locations\newline
+\scriptsize\url{kaggle.com/datasets/andrewmvd/us-hospital-locations} &
+CovidCareMap, \scriptsize\url{github.com/covidcaremap/covid19-healthsystemcapacity}
+({\scriptsize\path{us_healthcare_capacity-facility-CovidCareMap.csv}}); cada fila trae su \texttt{HIFLD-ID}, la
+misma fuente HIFLD del dataset de Kaggle &
+Filtro a la caja $33.70\le\text{lat}\le34.35$, $-118.70\le\text{lon}\le-117.90$ (127 hospitales),
+sin coordenadas repetidas; proyección lineal a la rejilla y ajuste a la celda libre más cercana. \\
+\addlinespace
+Knapsack Problem Data\newline
+\scriptsize\url{kaggle.com/datasets/warcoder/knapsack-problem} &
+Copia exacta \texttt{knapsack\_5\_items.csv} en \scriptsize\url{github.com/Kralog2/Tarea3IA}
+(SHA-256 \texttt{55b98b9d\ldots044c}) &
+10\,000 instancias de 5 kits (peso, precio, capacidad, solución óptima). Se parsean los arreglos en
+texto; 121 filas con \emph{Best picks} vacío (ningún kit cabe, \emph{Best price}$=0$) se toman como
+el vector cero. Los $50\,000$ kits forman el \emph{pool} del que se muestrean instancias de
+$n=10$ a $120$. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%=====================================================================
+\section{Rutas: UCS, A* e IDA*}
+%=====================================================================
+
+\subsection{Algoritmos}
+\textbf{UCS} es Dijkstra con prueba de meta al expandir. \textbf{A*} usa $f=g+h$ con la
+heurística~\eqref{eq:h}; a igual $f$ prefiere el mayor $g$. Como $h$ es consistente, ningún nodo se
+reabre. \textbf{IDA*} hace búsquedas en profundidad con umbral creciente sobre $f$. Se implementaron
+dos políticas de umbral:
+\begin{itemize}
+\item \emph{IDA* clásico} (Korf): el nuevo umbral es el menor $f$ que excedió al anterior. La primera
+solución es óptima, pero con costos reales casi cada iteración agrega un solo valor de $f$, y el
+número de iteraciones crece con el número de valores distintos de $f$.
+\item \emph{IDA*-CR} (Sarkar et al., 1991): el umbral se elige entre los $f$ excedidos para que la
+siguiente iteración tenga $\approx$ el doble de nodos. Si en esa iteración aparece una meta, la DFS
+sigue como B\&B (poda $f\ge$ mejor costo) hasta agotar la iteración; entonces la solución es óptima,
+porque todo nodo de un camino óptimo tiene $f\le C^*\le$ umbral y se visita.
+\end{itemize}
+En una rejilla hay muchísimos caminos distintos hacia una misma celda (transposiciones), y sin
+memoria IDA* los recorre todos. Por eso ambas variantes se probaron con y sin \emph{tabla de
+transposición} (TT) por iteración: se poda si se llega a un nodo con $g$ mayor o igual al mejor $g$
+visto en esa iteración, lo cual es seguro porque el presupuesto restante sería menor o igual.
+
+El \emph{factor de ramificación efectivo} $b^*$ resuelve $N_{\text{gen}}+1=1+b^*+\dots+(b^*)^d$
+(Russell y Norvig), con $N_{\text{gen}}$ los nodos generados sin contar la raíz (la raíz es el 1 del
+lado derecho) y $d$ el número de aristas de la solución; se calcula por bisección.
+
+\subsection{Validación con el dataset}
+Sin viento y con los costos del dataset (pasos de 1 y $\sqrt2$, cortes de esquina permitidos) se
+compararon UCS y A* con los caminos de referencia de D* Lite en los \valMapas{} mapas (obstáculos:
+\valObst\,\% del área). Los \valCaminosValidos{} caminos de referencia son caminos válidos de
+8-vecindad, pero no son los más cortos del mapa: en mediana miden \valMedRatio\,\% más que el óptimo de
+UCS/A*, sólo \valIguales{} coinciden con él y ninguno (\valMasCortos) es más corto. La razón es que el
+autor generó el dataset con \texttt{obst\_margin}\,=\,1 (así está en su
+\texttt{dataset/ds\_generator.py}): su planificador no pasa por celdas vecinas a un obstáculo, salvo
+junto al inicio o la meta, y en efecto ningún camino de referencia lo hace. Con ese mismo modelo
+(obstáculos inflados una celda), el costo de A* coincide con el de referencia en \valIgualesHolg{} de los
+\valMapas{} mapas (\valPctHolg\,\%). En los \valMayorHolg{} restantes A* encuentra un camino ligeramente
+más barato (mediana \valMedExcHolg\,\%, máximo \valMaxExcHolg\,\%), y en ninguno uno más caro
+(\valMenorHolg). El D* Lite publicado por el autor, corrido sobre varios de esos mapas, también da
+nuestro costo y no el del dataset, así que la diferencia viene de la versión del planificador con que
+se generó (su código intenta primero una implementación en C++ que no está en el repositorio), no de
+UCS/A*. UCS y A* coincidieron siempre entre sí; en promedio A* expandió \valExpA{} nodos contra
+\valExpUCS{} de UCS.
+
+\subsection{Resultados en las ciudades}
+Para cada $N\in\{50,100,150,200\}$ se hicieron 20 consultas entre pares de hospitales del
+escenario (las mismas para todos los métodos). Las dos variantes de IDA* se corrieron en las
+primeras 10, con límite de 15\,s y $4\cdot10^6$ nodos. El costo óptimo $C^*$ se obtiene con un
+Dijkstra independiente (SciPy). La Tabla~\ref{tab:busqueda} y la Figura~\ref{fig:busqueda} resumen los
+resultados.
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{Búsqueda de rutas en las ciudades (media $\pm$ d.e. sobre las consultas resueltas;
+memoria pico de Python medida con \texttt{tracemalloc} en las 3 primeras consultas, para las que llegan al
+límite repitiendo la búsqueda hasta el mismo número de nodos; brecha respecto a $C^*$).}
+\label{tab:busqueda}
+\setlength{\tabcolsep}{4pt}
+\input{tablas/tab_busqueda.tex}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig_busqueda_escala.png}
+\caption{Escalamiento de la búsqueda de rutas con el tamaño de la rejilla (mediana y rango
+intercuartil de las consultas resueltas; 20 consultas por tamaño, 10 para IDA*).}
+\label{fig:busqueda}
+\end{figure}
+
+Lo principal:
+\begin{itemize}
+\item UCS, A* e IDA*-CR (cuando termina) son óptimos en todas las consultas. A* expande
+\redAvsUCS\,\% menos nodos que UCS en total. La ganancia es moderada porque $h$ es conservadora
+($m_{\min}$ entre 0.51 y 0.58).
+\item El $b^*$ de UCS y A* queda entre 1.2 y 1.4 porque $d$ es grande (del orden de $N$); sirve más
+para comparar métodos en una misma consulta que entre tamaños. El de IDA* es mucho mayor porque
+cuenta todos los nodos generados en todas las iteraciones.
+\item IDA* resolvió \idaCrResueltas{} consultas con la política CR y sólo \idaResueltas{} con la
+clásica. Aun con TT, IDA* re-expande muchas veces los nodos a los que llega primero por un camino
+malo, y su tiempo es órdenes de magnitud mayor que el de A*. Su ventaja teórica (memoria $O(d)$) sólo
+existe sin TT, y sin TT el número de caminos explota (Figura~\ref{fig:ida}): con $N=24$ IDA* sin TT
+resolvió \idaSinTTOkNCE{} consultas, contra \idaCrTTOkNCE{} de IDA*-CR con TT, mientras A* expande
+una mediana de \idaAstarNCE{} nodos. En memoria, en cambio, IDA* sin TT sí cumple su promesa: con
+$N=24$ su pico fue de \idaMemSinTTNCE\,KiB (sólo la pila), contra \idaMemAstarNCE\,KiB de A* y
+\idaMemCrTTNCE\,KiB de IDA*-CR con TT (medianas de 3 consultas).
+\end{itemize}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\linewidth]{fig_ida_pequenas.png}
+\caption{IDA* en rejillas pequeñas con viento (10 consultas por tamaño, límite de $3\cdot10^6$ nodos
+o 10\,s). Sin tabla de transposición, el número de caminos que recorre crece exponencialmente.}
+\label{fig:ida}
+\end{figure}
+
+\subsection{Heurística aprendida}\label{sec:aprendida}
+\paragraph{Modelo.} Se aprende el cociente $r(n)=h^*(n)/\oct(n,g)$ y se usa
+$h_\theta(n)=\oct(n,g)\,\hat r(n)$, con $h_\theta(g)=0$. Los rasgos se calculan para todas las
+celdas a la vez: distancias octil y euclidiana, fracción de celdas bloqueadas y número de cruces de
+obstáculo en 16 muestras del segmento $n\to g$, viento proyectado sobre ese segmento, densidad local
+de obstáculos alrededor de $n$ y de $g$, $|\Delta r|$, $|\Delta c|$, densidad global y $m_{\min}$.
+El objetivo $h^*$ se obtiene con un Dijkstra en el grafo inverso desde la meta.
+
+\paragraph{Entrenamiento.} En \hMapas{} mapas de la carpeta \texttt{train} del dataset, cada uno con un
+viento aleatorio, y la meta del camino de referencia, se tomaron 2\,000 celdas por mapa (\hFilas{} filas).
+Se entrenaron dos modelos de \emph{gradient boosting} (HistGradientBoosting de scikit-learn):
+con pérdida cuadrática (MSE) y con pérdida de cuantil $0.2$, que sesga la predicción hacia abajo.
+En el 10\,\% de validación el error absoluto medio de $\hat r$ fue \hMaeMse{} y \hMaeQ{}, y la fracción
+de celdas sobreestimadas fue \hSobreMse\,\% y \hSobreQ\,\%.
+
+\paragraph{Garantía cuando sobreestima.} $h_\theta$ no es admisible ni consistente, así que se usa
+A* \emph{con reapertura} de nodos.
+
+\begin{prop}\label{prop:w}
+Sea $P^*$ un camino óptimo de $s$ a $g$ y $w_P=\max\{1,\max_{n\in P^*}h(n)/h^*(n)\}$. Si A* reabre
+nodos cerrados cuando mejora su $g$ y $h(g)=0$, el costo devuelto cumple $C\le w_P\cdot C^*$.
+\end{prop}
+\begin{proof}
+Mientras $g$ no se haya expandido, existe en OPEN un nodo $n'\in P^*$ con $g(n')=g^*(n')$: es el
+primer nodo de $P^*$ que no está cerrado con su $g$ óptimo; su predecesor en $P^*$ sí lo está, y al
+expandirlo le asignó $g^*(n')$ (con reapertura, aunque $n'$ estuviera cerrado con un $g$ peor).
+Entonces $f(n')=g^*(n')+h(n')\le g^*(n')+w_Ph^*(n')\le w_P\,(g^*(n')+h^*(n'))=w_P\,C^*$. Cuando A*
+elige $g$, $C=f(g)\le f(n')\le w_P C^*$.
+\end{proof}
+
+En cada consulta de prueba se calculó $h^*$ en todo el mapa, $w_P$ sobre el camino óptimo de A* y
+también $w_{\text{all}}=\max_n h_\theta/h^*$ sobre todas las celdas. La Tabla~\ref{tab:heur} y la
+Figura~\ref{fig:heur} muestran que la cota se cumplió en el \hCotaMse\,\% (MSE) y \hCotaQ\,\% (cuantil)
+de los \hTest{} mapas de prueba y en el \rCotaMse\,\%/\rCotaQ\,\% de las consultas en las ciudades.
+En los mapas de prueba el modelo MSE llegó a $w_P=\hWmaxMse$ ($w_{\text{all}}$ hasta \hWallMse), con
+brecha media de \hGapMse\,\% y máxima de \hGapMaxMse\,\%; el de cuantil, más conservador, tuvo
+$w_P\le\hWmaxQ$ y brecha media de \hGapQ\,\% (máxima \hGapMaxQ\,\%). En las ciudades, fuera de la
+escala de entrenamiento, $w_P$ llegó a \rWmaxMse{} (MSE) y \rWmaxQ{} (cuantil): la cota se sigue
+cumpliendo, pero ya no dice mucho.
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{Heurística aprendida frente a A* admisible y A* ponderado ($w=1.5$). El tiempo incluye la
+inferencia del modelo (\hInfMse\,ms por consulta en promedio en los mapas de prueba); la memoria (pico
+de Python en 3 mapas o consultas) incluye la matriz de rasgos de toda la rejilla.}
+\label{tab:heur}
+\resizebox{\linewidth}{!}{\input{tablas/tab_heuristica.tex}}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig_heuristica.png}
+\caption{(a) Todas las consultas quedan bajo la diagonal costo$=w_P C^*$, como predice la
+Proposición~\ref{prop:w}. (b) Nodos expandidos y (c) brecha en los mapas de prueba del dataset.}
+\label{fig:heur}
+\end{figure}
+
+En los mapas de prueba del dataset la heurística aprendida redujo los nodos expandidos respecto a A*
+(\hExpMse{} y \hExpQ{} contra \hExpA), pero menos de lo que su error medio sugeriría: sus errores no
+son suaves entre celdas vecinas, así que $f$ sube y baja a lo largo de los caminos y A* termina
+explorando una banda de nodos alrededor de $C^*$. En las ciudades el efecto depende de la escala. Con
+$N=50$ y $N=100$, la escala de los mapas de entrenamiento, A*-$\theta$ (MSE) expandió \rExpMseNFA{} y
+\rExpMseNBAA{} nodos contra \rExpAstarNFA{} y \rExpAstarNBAA{} de A* (Figura~\ref{fig:mision}b muestra
+un caso). Con $N=200$ expandió en promedio \rExpMseNCAA, más que UCS (\rExpUcsNCAA), y \rReabNCAA{} de esas
+expansiones fueron reaperturas; la mediana (\rMedMseNCAA, contra \rMedAstarNCAA{} de A*) muestra que no
+falla en todas las consultas, sino que algunas explotan: las distancias salen del rango visto al entrenar con mapas de $100\times100$, los
+árboles de decisión no extrapolan y la heurística se vuelve muy inconsistente. Además, calcular $h_\theta$ en toda la rejilla cuesta
+\rInfNBAA\,ms con $N=100$ y \rInfNCAA\,ms con $N=200$, más que toda la búsqueda de A*.
+
+A* ponderado con $w=1.5$ expandió menos nodos en todos los tamaños con una cota \emph{demostrable} de
+$1.5\,C^*$. La heurística aprendida sólo conviene si su inferencia se amortiza (muchas consultas con la
+misma meta), si las consultas se parecen a las de entrenamiento y si se acepta que su $w$ es una
+cantidad \emph{medida}, no garantizada.
+
+%=====================================================================
+\section{Carga útil de cada dron}
+%=====================================================================
+
+Cada dron elige kits $x\in\{0,1\}^n$ para maximizar el valor (prioridad médica) con capacidad $W$ y
+pares incompatibles $E$ (por ejemplo, cadena de frío y compresas térmicas):
+\[
+\max\ \textstyle\sum_i v_ix_i\quad\text{s.a.}\quad\sum_iw_ix_i\le W,\qquad x_i+x_j\le1\ \ \forall(i,j)\in E.
+\]
+Las instancias se arman con kits del dataset de Kaggle, $W=40\,\%$ del peso total y conflictos
+aleatorios con grado medio $1.5$; los kits se ordenan por densidad $v_i/w_i$.
+
+\paragraph{Backtracking con máscaras de bits ($n\le30$).} El estado es (nivel $i$, peso, valor,
+máscara de elegidos, máscara \texttt{banned}). Al tomar el kit $i$,
+\texttt{banned |= conf[i]}, donde \texttt{conf[i]} es la máscara de sus incompatibles; saber si $i$
+está prohibido es un \texttt{AND} en $O(1)$. La versión ``con cota'' poda si el valor actual más la
+suma de todos los valores restantes no supera al mejor.
+
+\paragraph{B\&B con cota fraccional ($n\in\{30,60,90,120\}$).}
+\begin{prop}
+En un nodo con decisiones fijas para los kits $<i$, peso $c_w$, valor $c_v$ y conjunto prohibido $B$,
+$UB=c_v+\mathrm{LP}(\{j\ge i: j\notin B\},\,W-c_w)$, donde LP es la mochila fraccional resuelta con el
+voraz de Dantzig, es una cota superior del valor de cualquier completación factible.
+\end{prop}
+\begin{proof}
+Toda completación factible usa sólo kits de $\{j\ge i:j\notin B\}$, respeta la capacidad restante y
+además los conflictos. Quitar los conflictos y la integralidad sólo agranda la región factible, y el
+voraz por densidad es óptimo para la mochila fraccional.
+\end{proof}
+Se probaron DFS (incluir primero, incumbente inicial voraz) y mejor-primero por $UB$.
+
+\paragraph{Meet-in-the-middle ($n=40$).} Se divide el conjunto en $A$ y $B$ empaquetando componentes
+conexas completas del grafo de conflictos para minimizar los conflictos cruzados. Se enumeran
+vectorialmente los $2^{|A|}$ y $2^{|B|}$ subconjuntos con su peso, valor, factibilidad interna y la
+máscara de kits de $B$ que prohíben. Sea $\partial B\subseteq B$ el conjunto de kits de $B$ con algún
+conflicto en $A$; para cada patrón $\beta\subseteq\partial B$ se combinan los subconjuntos de $B$ cuya
+intersección con $\partial B$ es $\beta$ con los de $A$ compatibles con $\beta$, mediante el MITM
+clásico: $B$ ordenado por peso con máximo prefijo de valor y búsqueda binaria de $W-w(A)$. Es exacto,
+cuesta $O(2^{|\partial B|}\,2^{n/2}\,n)$ y usa $O(2^{n/2})$ memoria. Con valor $=$ peso resuelve
+``cargar lo más cerca posible de $W$''. En este experimento el peso de cada kit es
+$1000\,w_i+v_i$ (gramos) para que llegar exactamente a $W$ no sea trivial.
+
+\paragraph{Validación con Kaggle.} En las \kagInst{} instancias, backtracking, B\&B (DFS y
+mejor-primero), MITM y una DP de control reprodujeron \emph{Best price} sin ninguna discrepancia
+(\kagDisc), y todos los \emph{Best picks} del dataset son factibles y alcanzan ese valor. Tiempo medio
+por instancia: \kagTBt\,$\mu$s (BT), \kagTBnb\,$\mu$s (B\&B), \kagTMitm\,$\mu$s (MITM). Con 5 kits la
+memoria es mínima: el pico por instancia (el máximo en 200 instancias) fue de \kagMemBt\,KiB (BT),
+\kagMemBnb\,KiB (B\&B DFS), \kagMemBest\,KiB (mejor-primero), \kagMemMitm\,KiB (MITM) y \kagMemDp\,KiB (DP).
+
+\paragraph{Resultados.} Cuando terminan, todos los métodos exactos coinciden con HiGHS. Sin cota el
+backtracking recorre casi los $2^{n+1}$ nodos (\btSinNCC{} con $n=22$); con la cota trivial baja a
+\btConNCC{} y con $n=30$ visita \btConNDA{} en promedio. El B\&B con cota fraccional necesita órdenes de
+magnitud menos nodos y resuelve casi todas las instancias en milisegundos, pero su costo depende mucho
+de la instancia: con $n=120$ hubo una en la que la DFS llegó al límite de 60\,s (\bnbDfsMaxNodos{}
+nodos) y la versión mejor-primero agotó su límite de memoria de la cola. La DFS se detuvo con una
+incumbente de valor \bnbDfsHardVal, que es la óptima (\bnbHardOpt) pero sin certificado; la de
+mejor-primero se quedó en \bnbBestHardVal, con brecha de \bnbBestHardGap\,\%, porque explora por cota y
+no profundiza hasta encontrar buenas soluciones completas. La razón de fondo es que la cota fraccional
+ignora los conflictos: si
+varios kits de alta densidad son incompatibles entre sí, la cota queda muy por encima del óptimo y casi
+no poda. HiGHS, cuya relajación lineal sí incluye $x_i+x_j\le1$, resolvió esa instancia en
+\milpKnapT\,ms. Mejor-primero expande menos nodos que DFS, pero guarda toda la frontera: hasta
+\bnbBestMemMax\,MiB contra \bnbDfsMem\,KiB de la DFS. (La memoria de HiGHS no aparece: corre en C++,
+fuera de lo que mide \texttt{tracemalloc}.) El GA (base bioinspirada, 10 semillas, $60n$
+evaluaciones) quedó a \gaGap\,\% del óptimo en promedio y lo encontró en el \gaOpt\,\% de las corridas. Para cargar cerca de $W$ con $n=40$, MITM tardó \mitmT\,ms en promedio, usó \mitmMem\,MiB (las listas de
+$2^{20}$ subconjuntos de cada mitad, contra \mitmBnbMem\,KiB del B\&B) y dejó una holgura media de
+\mitmHolg{} gramos, mientras que B\&B, cuya cota fraccional no poda cuando valor $=$ peso, llegó al
+límite de 5\,s en \mitmLim{} instancias. Este problema (suma de subconjuntos con pesos grandes) también
+es difícil para HiGHS, que con 20\,s de límite y tolerancia de optimalidad 0 certificó el óptimo en
+\mitmMilpCert{} instancias. (Con su tolerancia relativa por omisión, $10^{-4}$, HiGHS daba por
+``óptimas'' cargas hasta 26\,g menores que la de MITM: un certificado de MILP vale sólo hasta su
+tolerancia.) En
+las \mitmVerif{} instancias con algún certificado independiente (HiGHS o B\&B terminado), MITM
+coincidió con él, y en ninguna instancia HiGHS encontró una carga mejor que la de MITM.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig_mochila.png}
+\caption{Carga útil (mediana y rango intercuartil de 10 instancias por $n$): (a) backtracking con y
+sin cota; (b,c) B\&B con cota fraccional; (d) MITM frente a B\&B y HiGHS para cargar lo más cerca
+posible de $W$.}
+\label{fig:mochila}
+\end{figure}
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{B\&B con cota fraccional, HiGHS y GA (10 instancias por $n$; GA con 10 semillas por
+instancia). ``Termina'': corridas que demostraron optimalidad dentro de 60\,s.}\label{tab:bnb}
+\setlength{\tabcolsep}{3pt}
+\resizebox{\linewidth}{!}{\input{tablas/tab_mochila_bnb.tex}}
+\end{table}
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{MITM para cargar lo más cerca posible de $W$ (10 instancias por $n$).}\label{tab:mitm}
+\resizebox{\linewidth}{!}{\input{tablas/tab_mochila_mitm.tex}}
+\end{table}
+
+%=====================================================================
+\section{Plataformas de aterrizaje y turnos (CSP)}
+%=====================================================================
+
+\paragraph{Modelo.} Variables: una por entrega $d$. Dominio:
+$D_d=\{(p,t):p\in\text{plataformas permitidas},\ t\in[e_d,l_d]\}$, donde $[e_d,l_d]$ es la
+ventana de llegada del dron y los drones pesados sólo pueden usar las plataformas reforzadas
+(primera y última fila). Para todo par $d\ne d'$ con valores $(p,t)$ y $(p',t')$:
+\[
+t\ne t'\ \ \lor\ \ p'\notin N[p],\qquad N[p]=\{p\}\cup\text{vecinos}(p),
+\]
+es decir, un dron por plataforma por turno y nunca dos plataformas adyacentes a la vez. Los dominios
+son \emph{bitsets}: $(p,t)$ es el bit $tP+p$ y $\text{conf}[a]$ es la máscara de los valores
+incompatibles con $a$, de modo que forward checking es \texttt{dom[y] \&= \~{}conf[a]}.
+
+\paragraph{Algoritmos.} Backtracking cronológico (BT); forward checking (FC); AC-3, como
+preprocesamiento o mantenido en cada nodo (MAC), con \emph{revise}$(X_i,X_j)$: $a$ tiene soporte sii
+$D_j\,\&\,\neg\text{conf}[a]\neq0$. En MAC, después de forward checking la cola de AC-3 empieza con los
+arcos $(X_k,X_j)$ hacia cada variable $X_j$ cuyo dominio se redujo, para que esas reducciones se
+propaguen entre las variables que faltan. MRV elige la variable con menos valores \emph{legales}
+restantes (en BT, los del dominio que no chocan con lo ya asignado), con desempate por grado (entregas
+con ventana traslapada), y LCV prueba primero el valor que elimina menos valores ajenos. Min-conflicts (10 semillas) sirve de referencia de
+búsqueda local. Todas las soluciones se revisaron con un verificador independiente
+(\cspValidas\,\% válidas de \cspSoluciones).
+
+\paragraph{Resultados.} Con un hub de $3\times4$ plataformas, adyacencia de 8 y $T=8$ turnos caben
+a lo sumo 4 drones por turno (32 en total). La Tabla~\ref{tab:csp} y la Figura~\ref{fig:csp} muestran
+la transición de fase: lejos de la capacidad todos resuelven; cerca de ella BT y FC con orden
+estático se atoran, MRV es lo que más ayuda y LCV ayuda en las instancias más difíciles. AC-3 sólo
+como preprocesamiento no cambia nada: en la raíz todos los valores tienen soporte, porque la restricción
+es ``suelta'' (un valor $(p,t)$ pierde soporte en $X_j$ sólo si todo $D_j$ cae en el mismo turno y en la
+vecindad de $p$). Mantenido en cada nodo (MAC), en cambio, sí poda más que forward checking cuando los
+dominios ya están casi vacíos, que es justo la región difícil: la mediana de nodos baja de \cspNodFcDCI{}
+a \cspNodMacDCI{} con $D=28$, de \cspNodFcDDA{} a \cspNodMacDDA{} con $D=30$ y de \cspNodFcDDC{} (el límite) a
+\cspNodMacDDC{} con $D=32$, comparado con FC+MRV+LCV. Cada nodo de MAC cuesta mucho más, porque AC-3
+revisa hasta $O(D^2)$ arcos (\cspTMacDDA\,ms contra \cspTFcDDA\,ms en promedio con $D=30$), así que con el
+límite de 5\,s las dos variantes terminan proporciones parecidas de instancias (\cspDoneMacDDA{} y
+\cspDoneFcDDA{} con $D=30$). Ninguno de los métodos completos prueba rápido la insatisfacibilidad de las
+instancias saturadas (son problemas tipo palomar), y min-conflicts nunca puede probarla.
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{CSP con hub de $3\times4$ y $T=8$ (10 instancias por $D$). Por método: \% de instancias
+terminadas dentro de $10^5$ nodos o 5\,s (mediana de nodos); min-conflicts: \% resueltas.}
+\label{tab:csp}
+\resizebox{\linewidth}{!}{\input{tablas/tab_csp.tex}}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig_csp.png}
+\caption{Transición de fase del CSP de plataformas y turnos.}
+\label{fig:csp}
+\end{figure}
+
+\begin{table}[H]
+\centering\scriptsize
+\caption{Escalamiento con un hub de $4\times5$, adyacencia de 4 y $T=12$: \% terminadas / tiempo
+medio [ms].}\label{tab:cspesc}
+\input{tablas/tab_csp_escala.tex}
+\end{table}
+
+{\sloppy En el hub grande todas las instancias resultaron satisfacibles y FC+MRV+LCV y MAC+MRV+LCV las
+resuelven sin retroceder (exactamente $D$ nodos), así que la propagación extra de MAC no tiene nada que
+ahorrar y sólo cuesta: con $D=\cspDmax$, FC+MRV+LCV tardó \cspTFc\,ms y MAC+MRV+LCV \cspTMac\,ms en
+promedio, con memoria pico de \cspMemFc{} y \cspMemMac\,KiB (Tabla~\ref{tab:cspmem}). Con bitsets, guardar
+una copia de los dominios por nivel es barato; lo que ocupa memoria en MAC es la cola de AC-3. BT+MRV
+usa la menor memoria (\cspMemBt\,KiB) porque no copia dominios, pero con $D=\cspDmax$ ya no terminó todas
+las instancias. Min-conflicts resolvió todas usando \cspMemMc\,KiB.\par}
+
+\begin{table}[H]
+\centering\scriptsize
+\caption{Memoria pico de Python [KiB] en el hub de $4\times5$ (instancia 0 de cada $D$; min-conflicts con
+la semilla 0).}\label{tab:cspmem}
+\input{tablas/tab_csp_memoria.tex}
+\end{table}
+
+%=====================================================================
+\section{Orden de visita: TSP asimétrico}
+%=====================================================================
+
+La matriz $C\in\mathbb R^{(K+1)\times(K+1)}$ se obtiene con Dijkstra dirigido desde el depósito y
+cada clínica; por el viento $C\ne C^\top$. Un recorrido es una permutación de las clínicas que sale y
+regresa al depósito.
+
+\subsection{Métodos exactos}
+\begin{prop}
+Para un prefijo $0\to\dots\to u$ con costo $g$ y conjunto restante $R$, con
+$s_{ij}=\min(c_{ij},c_{ji})$,
+\[
+LB=\max\Bigl\{g+\mathrm{MST}_s(R\cup\{u,0\}),\ \ g+\mathrm{MST}_s(R)+\min_{r\in R}c_{ur}+\min_{r\in R}c_{r0}\Bigr\}
+\]
+es una cota inferior del costo de cualquier recorrido que extienda el prefijo.
+\end{prop}
+\begin{proof}
+El resto del recorrido es un camino hamiltoniano $u\to R\to0$. Ignorando direcciones es un árbol de
+expansión de $R\cup\{u,0\}$, y cada arista dirigida cuesta al menos su $s_{ij}$; eso da la primera
+cota. Quitando las dos aristas extremas queda un camino que es árbol de expansión de $R$, y esas dos
+aristas cuestan al menos $\min_r c_{ur}$ y $\min_r c_{r0}$.
+\end{proof}
+El B\&B es en profundidad, ordena los hijos por $c_{ur}$ y poda con $LB\ge$ mejor. Se comparó sin
+cota inicial, con la cota del vecino más cercano (VMC) y con la de ACO+LS (híbrido exacto +
+bioinspirado). Held--Karp ($O(2^KK^2)$) y la fuerza bruta ($K\le8$) sirven de control. Para
+$K>12$ el óptimo se obtuvo con HiGHS: formulación de asignación con cortes de 2-ciclos y cortes de
+subciclos de Dantzig--Fulkerson--Johnson agregados de forma perezosa (a lo sumo \milpMaxT\,s por
+instancia). Como HiGHS declara óptimo dentro de una tolerancia relativa ($10^{-4}$ por omisión), las 16
+instancias se resolvieron otra vez con tolerancia 0 y los óptimos fueron idénticos; además, ninguna de
+las 1\,120 corridas de metaheurísticas encontró un recorrido más barato. La relajación de asignación
+(AP) queda en promedio \apGap\,\% por debajo del óptimo.
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{ATSP exacto con $K\le12$ ($N=100$, 10 subconjuntos de clínicas por $K$). Para Held--Karp
+se reportan los estados $2^KK$; el tiempo de ``+ACO+LS'' incluye 2\,000 evaluaciones de ACO+LS.}
+\label{tab:atspex}
+\input{tablas/tab_atsp_exacto.tex}
+\end{table}
+
+Con $K=12$ el B\&B con cota MST expandió \exBbNodos{} nodos en promedio (\exBbT\,ms, \exBbMem\,KiB de memoria
+pico, frente a \exHkMem\,KiB de la tabla de Held--Karp); con la cota
+inicial de ACO+LS bajó a \exBbAcoNodos{} (\exBbAcoT\,ms incluyendo ACO), y con la del vecino más
+cercano casi no cambió. Held--Karp tardó \exHkT\,ms. Todos los métodos exactos coincidieron
+(\exTodosOk\,\%). Con este tamaño la DP gana: $2^KK^2$ es pequeño, mientras que la cota MST pierde fuerza
+con la asimetría (usa $\min(c_{ij},c_{ji})$ e ignora la dirección). La cota inicial ayuda poco porque el
+B\&B, al visitar primero los hijos más baratos, encuentra pronto incumbentes casi óptimas; lo que
+domina es demostrar que no hay nada mejor.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\linewidth]{fig_atsp_exacto.png}
+\caption{ATSP exacto con $K\le12$: nodos (estados para Held--Karp, permutaciones para fuerza bruta) y
+tiempo; mediana y rango intercuartil de 10 instancias por $K$.}
+\label{fig:atspex}
+\end{figure}
+
+\subsection{Metaheurísticas}
+Todas empiezan de permutaciones aleatorias y tienen el mismo presupuesto de $3\cdot10^4$
+evaluaciones de la función objetivo (cada recorrido construido o vecino evaluado cuenta una vez).
+\begin{itemize}
+\item \textbf{SA}: vecino aleatorio entre swap, inserción y 2-opt (que en el ATSP invierte el sentido
+del segmento); $T_0$ calibrada para aceptar la mitad de los empeoramientos y enfriamiento geométrico
+hasta $10^{-3}T_0$.
+\item \textbf{Tabú}: lista de candidatos de 30 vecinos por iteración (70\,\% inserciones granulares
+de una ciudad junto a uno de sus 10 predecesores más baratos, como en la búsqueda tabú granular de
+Toth y Vigo, y 30\,\% swap/2-opt); atributo tabú: las ciudades movidas, con permanencia $\approx K/4$;
+aspiración por mejora global.
+\item \textbf{GA-OX}: población 60, torneo de 3, cruza OX (Davis), mutación por inversión
+($p=0.5$) y elitismo de 2.
+\item \textbf{ACO (MMAS)}: 20 hormigas, $\alpha=1$, $\beta=3$, $\rho=0.1$, límites
+$\tau_{\min},\tau_{\max}$ de Stützle y Hoos; depósito alternado entre la mejor de la iteración y la
+global; construcción vectorizada.
+\item \textbf{UCB-HH}: hiperheurística de selección; UCB1 elige el operador (swap, inserción o
+2-opt) con recompensa 1 si mejora la solución actual; aceptación de SA con la misma temperatura.
+\item \textbf{Híbridos} (puntos extra): GA memético (población 30 y búsqueda local granular de $2K$
+evaluaciones en el 2\,\% de los hijos) y ACO+LS (búsqueda local sobre la mejor hormiga de cada
+iteración); además el B\&B con cota inicial de ACO+LS de la sección anterior.
+\end{itemize}
+
+\begin{table}[t]
+\centering\scriptsize
+\caption{Brecha contra el óptimo exacto [\%] (media $\pm$ d.e. de 10 semillas) para las 16
+combinaciones $(N,K)$. En negritas el mejor promedio de cada fila.}
+\label{tab:atspmeta}
+\setlength{\tabcolsep}{3pt}
+\resizebox{\linewidth}{!}{\input{tablas/tab_atsp_meta.tex}}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig_atsp_convergencia.png}
+\caption{Convergencia con $N=100$: brecha contra el óptimo (línea: media de 10 semillas; banda: rango
+intercuartil). Las brechas nulas se dibujan en $10^{-3}$ por la escala logarítmica.}
+\label{fig:conv}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig_atsp_brechas.png}
+\caption{Brecha media y tiempo por corrida, promediados sobre las cuatro rejillas.}
+\label{fig:brechas}
+\end{figure}
+
+\begin{table}[H]
+\centering\scriptsize
+\caption{Tiempo medio por corrida [s] / memoria pico de Python [KiB]. La memoria se midió con la
+semilla 0 y $5\,000$ evaluaciones: el pico lo fijan la población o la matriz de feromona, no el
+número de evaluaciones.}
+\label{tab:atsptiempo}
+\setlength{\tabcolsep}{3pt}
+\input{tablas/tab_atsp_tiempo.tex}
+\end{table}
+
+\paragraph{Resultados.} Con $K=12$ todos los métodos quedan a menos de 0.2\,\% del óptimo, y SA, Tabú y
+UCB-HH lo encuentran en las 40 corridas. La diferencia aparece al crecer $K$: el mejor promedio fue
+\mejorKCF{} con $K=25$ (\mejorGapKCF\,\%), \mejorKFA{} con $K=50$ (\mejorGapKFA\,\%) y \mejorKBAA{}
+con $K=100$ (\mejorGapKBAA\,\%). Con $K=100$ las brechas medias fueron: SA \gapSaKBAA, Tabú
+\gapTabuKBAA, GA-OX \gapGaKBAA, ACO \gapAcoKBAA, UCB-HH \gapUcbKBAA, memético \gapMemKBAA{} y ACO+LS
+\gapAcoLsKBAA\,\%. Algunas conclusiones:
+\begin{itemize}
+\item El GA puro es el más débil con presupuesto fijo: OX conserva el orden relativo, pero recombinar
+sin búsqueda local avanza muy despacio en un espacio de $K!$ permutaciones. Agregarle búsqueda local
+(memético) reduce su brecha a la cuarta parte con $K=100$.
+\item ACO+LS fue el más robusto para $K\ge50$: la feromona concentra la construcción en aristas
+buenas y la búsqueda local granular corrige el detalle. ACO sin búsqueda local también escala bien
+en calidad, pero es el más lento con $K=100$ porque cada construcción cuesta $O(K^2)$.
+\item UCB-HH superó a SA, que usa la misma aceptación y temperatura pero elige el operador al azar,
+en $K=50$ y $K=100$. En promedio UCB eligió 2-opt el \ucbTwo\,\%, inserción el \ucbIns\,\% y swap el
+\ucbSwap\,\% de las veces (Figura~\ref{fig:ucb}): aprendió que invertir segmentos mejora más seguido.
+\item El tamaño de la rejilla $N$ no muestra una tendencia clara: sólo cambia la matriz $C$, y la
+brecha depende sobre todo de $K$.
+\item Con $K=100$ las curvas de la Figura~\ref{fig:conv} siguen bajando al final del presupuesto: con
+más evaluaciones todos mejorarían, y el orden entre métodos se mantiene a lo largo de la curva.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\linewidth]{fig_ucb.png}
+\caption{Fracción acumulada de uso de cada operador en la hiperheurística UCB ($N=100$, $K=50$,
+media de 10 semillas).}
+\label{fig:ucb}
+\end{figure}
+
+%=====================================================================
+\section{Discusión: qué garantiza cada método}
+%=====================================================================
+
+\begin{table}[H]
+\centering\small
+\caption{Garantías de los métodos usados.}\label{tab:garantias}
+\begin{tabular}{p{4.2cm}p{11.3cm}}
+\toprule
+Método & Garantía \\
+\midrule
+UCS, A* ($h$ consistente), IDA*/IDA*-CR & \textbf{Exactos}: completos y óptimos (costos $>0$). A* no
+reabre nodos y es óptimamente eficiente para su $h$; IDA* usa $O(d)$ memoria sin TT. \\
+A* ponderado ($w$) & Completo, costo $\le w\,C^*$ demostrable. \\
+A* con $h_\theta$ aprendida & Completo (grafo finito, con reapertura). Pierde la optimalidad, la
+consistencia (hay reaperturas) y la cota a priori: $C\le w_PC^*$ sólo vale para el $w_P$
+\emph{medido}, que no se conoce antes de resolver y puede crecer fuera de la distribución de
+entrenamiento. \\
+Backtracking, B\&B, MITM, Held--Karp, B\&B-MST, HiGHS & \textbf{Exactos}. \\
+BT, FC, MAC (CSP) & \textbf{Completos}: deciden satisfacible/insatisfacible (si terminan). \\
+Min-conflicts & Incompleto: no puede demostrar insatisfacibilidad. \\
+SA & \textbf{Probabilísticamente completo} sólo con enfriamiento logarítmico (Hajek, 1988); con el
+enfriamiento geométrico usado no hay garantía. \\
+GA elitista con mutación & Converge en probabilidad al óptimo (Rudolph, 1994): la inversión genera
+cualquier permutación con probabilidad positiva y el elitismo no pierde lo encontrado. \\
+ACO (MMAS) & $\tau_{\min}>0$ da convergencia en valor: la probabilidad de haber construido el óptimo
+tiende a 1 (Stützle y Dorigo, 2002). \\
+Tabú, UCB-HH & Sin garantía de optimalidad. La cota de regret de UCB1 supone recompensas
+estacionarias, y aquí la utilidad de cada operador cambia durante la búsqueda. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Memoria.} Las diferencias de memoria siguen a las estructuras de datos. A* y UCS guardan
+$g$, padres y frontera para toda la rejilla ($O(V)$; con $N=200$, \memAstarNCAA{} y \memUcsNCAA\,KiB en
+promedio). IDA* sin tabla de transposición sólo guarda la pila ($O(d)$), pero en rejillas eso lo
+vuelve impráctico; con la tabla vuelve a $O(V)$ (\memIdaCrNCAA\,KiB para IDA*-CR con $N=200$). En la
+mochila, la DFS guarda una rama ($O(n)$) y mejor-primero toda la frontera (hasta \bnbBestMemMax\,MiB),
+y MITM sus $2^{n/2}$ subconjuntos por mitad (\mitmMem\,MiB con $n=40$). Held--Karp necesita su tabla de
+$2^K K$ estados, MAC una cola de hasta $O(D^2)$ arcos, ACO la matriz de feromona $O(K^2)$
+(\memMetaAco\,KiB con $K=100$) y SA, Tabú y UCB-HH sólo un par de permutaciones (\memMetaSa{} y
+\memMetaTabu\,KiB).
+
+En resumen, para las decisiones que sí admiten demostración en el tiempo disponible conviene usar
+los métodos exactos con buenas cotas: A* con la heurística consistente para las rutas (milisegundos en
+rejillas de $200\times200$), B\&B con cota fraccional para la carga (casi siempre en milisegundos con
+$n\le120$, aunque con instancias difíciles cuando los kits densos son incompatibles) y Held--Karp para
+$K\le12$. Cuando el problema crece, las metaheurísticas híbridas dan buenas soluciones en menos de un
+segundo (ACO+LS: \mejorGapKFA\,\% con $K=50$ y \mejorGapKBAA\,\% con $K=100$), pero sólo un método
+exacto (aquí HiGHS con cortes, hasta \milpMaxT\,s) puede certificar la brecha. La heurística aprendida
+muestra el intercambio central: renuncia a las garantías a cambio de información; en la escala de
+entrenamiento ahorra nodos, fuera de ella deja de ayudar, y A* ponderado da un ahorro parecido con una
+cota demostrable.
+
+%=====================================================================
+\section{Puntos extra}
+%=====================================================================
+\begin{itemize}
+\item \textbf{Panel interactivo} (\texttt{dashboard/panel\_drones.html}, un solo archivo sin
+dependencias): mapa de la misión con capas de viento, rutas de cada método y nodos expandidos;
+curvas de convergencia para las 16 combinaciones $(N,K)$; tablas de búsqueda, mochila y CSP; y el
+horario de plataformas.
+\item \textbf{Heurística aprendida} con dos pérdidas, verificación empírica de la
+Proposición~\ref{prop:w} y su prueba.
+\item \textbf{Híbridos búsqueda--bioinspirados}: GA memético, ACO+LS y B\&B exacto con cota inicial
+de ACO+LS.
+\end{itemize}
+
+%=====================================================================
+\section{Configuración experimental y reproducibilidad}
+%=====================================================================
+\begin{itemize}
+\item \textbf{Hardware}: Intel Xeon @ 2.10\,GHz, 2 vCPU, 7\,GB de RAM, Linux. Python 3.13.18,
+NumPy 2.5.3, SciPy 1.18.1 (Dijkstra, HiGHS), scikit-learn 1.9.1.
+\item \textbf{Tiempo}: \texttt{time.perf\_counter}, sin instrumentar. \textbf{Memoria}: pico de
+asignaciones de Python con \texttt{tracemalloc} en una corrida aparte (no incluye el intérprete).
+\item \textbf{Semillas}: los métodos estocásticos (SA, Tabú, GA, ACO, UCB-HH, híbridos, GA de la
+mochila, min-conflicts) se corrieron con 10 semillas. Las tablas reportan media $\pm$ desviación
+estándar; las figuras con escala logarítmica, mediana y rango intercuartil. Los métodos deterministas
+se promedian sobre instancias o consultas distintas.
+\item \textbf{Ejecución}: \texttt{python run\_all.py} corre todos los experimentos y regenera
+\texttt{resultados/*.csv}, las figuras, las tablas de este reporte (\texttt{reporte/tablas}),
+\texttt{reporte/numeros.tex} y el panel. Cada número del texto viene de esos archivos.
+\end{itemize}
+
+\section*{Referencias}
+\begin{enumerate}[label={[\arabic*]},leftmargin=*]
+\item S. Russell y P. Norvig. \emph{Artificial Intelligence: A Modern Approach}, 4.\textsuperscript{a}
+ed. Pearson, 2021.
+\item R. E. Korf. Depth-first iterative-deepening: an optimal admissible tree search.
+\emph{Artificial Intelligence} 27(1):97--109, 1985.
+\item U. K. Sarkar, P. P. Chakrabarti, S. Ghose y S. C. De Sarkar. Reducing reexpansions in
+iterative-deepening search by controlling cutoff bounds. \emph{Artificial Intelligence}
+50(2):207--221, 1991.
+\item J. Pearl. \emph{Heuristics: Intelligent Search Strategies for Computer Problem Solving}.
+Addison-Wesley, 1984.
+\item E. Horowitz y S. Sahni. Computing partitions with applications to the knapsack problem.
+\emph{Journal of the ACM} 21(2):277--292, 1974.
+\item A. K. Mackworth. Consistency in networks of relations. \emph{Artificial Intelligence}
+8(1):99--118, 1977.
+\item M. Held y R. M. Karp. A dynamic programming approach to sequencing problems. \emph{Journal of
+SIAM} 10(1):196--210, 1962.
+\item T. Stützle y H. H. Hoos. MAX--MIN Ant System. \emph{Future Generation Computer Systems}
+16(8):889--914, 2000.
+\item T. Stützle y M. Dorigo. A short convergence proof for a class of ant colony optimization
+algorithms. \emph{IEEE Trans. Evolutionary Computation} 6(4):358--365, 2002.
+\item B. Hajek. Cooling schedules for optimal annealing. \emph{Mathematics of Operations Research}
+13(2):311--329, 1988.
+\item G. Rudolph. Convergence analysis of canonical genetic algorithms. \emph{IEEE Trans. Neural
+Networks} 5(1):96--101, 1994.
+\item P. Toth y D. Vigo. The granular tabu search and its application to the vehicle-routing
+problem. \emph{INFORMS Journal on Computing} 15(4):333--346, 2003.
+\item P. Auer, N. Cesa-Bianchi y P. Fischer. Finite-time analysis of the multiarmed bandit problem.
+\emph{Machine Learning} 47:235--256, 2002.
+\item G. B. Dantzig, D. R. Fulkerson y S. M. Johnson. Solution of a large-scale traveling-salesman
+problem. \emph{Operations Research} 2(4):393--410, 1954.
+\item D. Caffagni. 2D path planning with CNN (dataset y generador),
+\url{https://github.com/dcaffo98/path-planning-cnn}, consultado el 3 de noviembre de 2026.
+\end{enumerate}
+
+\end{document}

@@ -1,0 +1,27 @@
+\begin{tabular}{llrrrr}
+\toprule
+$K$ & método & nodos / estados & tiempo [ms] & mem. [KiB] & óptimo [\%] \\
+\midrule
+\multirow{5}{*}{6} & Fuerza bruta & 720 $\pm$ 0 & 3.4 $\pm$ 1.1 & 3.8 & 100 \\
+ & Held--Karp (DP) & 384 $\pm$ 0 & 1.2 $\pm$ 0.3 & 10.8 & 100 \\
+ & B\&B (MST) & 73 $\pm$ 31 & 1.1 $\pm$ 0.5 & 7.5 & 100 \\
+ & B\&B (MST) + VMC & 71 $\pm$ 31 & 1.0 $\pm$ 0.5 & 7.5 & 100 \\
+ & B\&B (MST) + ACO+LS & 57 $\pm$ 28 & 33.7 $\pm$ 6.3 & 7.3 & 100 \\
+\midrule
+\multirow{5}{*}{8} & Fuerza bruta & 40\,320 $\pm$ 0 & 185.2 $\pm$ 27.1 & 3.9 & 100 \\
+ & Held--Karp (DP) & 2\,048 $\pm$ 0 & 5.4 $\pm$ 0.3 & 38.3 & 100 \\
+ & B\&B (MST) & 340 $\pm$ 323 & 8.2 $\pm$ 6.2 & 10.4 & 100 \\
+ & B\&B (MST) + VMC & 338 $\pm$ 323 & 7.5 $\pm$ 5.6 & 10.4 & 100 \\
+ & B\&B (MST) + ACO+LS & 303 $\pm$ 294 & 44.6 $\pm$ 9.0 & 10.3 & 100 \\
+\midrule
+\multirow{4}{*}{10} & Held--Karp (DP) & 10\,240 $\pm$ 0 & 27.0 $\pm$ 0.5 & 207.9 & 100 \\
+ & B\&B (MST) & 1\,695 $\pm$ 1\,238 & 61.3 $\pm$ 38.0 & 14.0 & 100 \\
+ & B\&B (MST) + VMC & 1\,693 $\pm$ 1\,238 & 60.5 $\pm$ 37.6 & 14.0 & 100 \\
+ & B\&B (MST) + ACO+LS & 1\,542 $\pm$ 1\,200 & 96.1 $\pm$ 36.4 & 13.9 & 100 \\
+\midrule
+\multirow{4}{*}{12} & Held--Karp (DP) & 49\,152 $\pm$ 0 & 139.8 $\pm$ 24.8 & 983.6 & 100 \\
+ & B\&B (MST) & 67\,492 $\pm$ 107\,107 & 2\,568.7 $\pm$ 3\,718.8 & 16.4 & 100 \\
+ & B\&B (MST) + VMC & 67\,490 $\pm$ 107\,107 & 2\,568.4 $\pm$ 3\,758.9 & 18.1 & 100 \\
+ & B\&B (MST) + ACO+LS & 63\,223 $\pm$ 99\,126 & 2\,375.7 $\pm$ 3\,334.8 & 18.1 & 100 \\
+\bottomrule
+\end{tabular}
