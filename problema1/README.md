@@ -11,21 +11,23 @@ Reporte: `reporte/P1_drones.pdf` · Panel interactivo (puntos extra): `dashboard
 - **Rutas**: en los 2 506 mapas originales de Kaggle UCS y A* coinciden siempre entre sí. Los caminos
   de referencia se generaron dejando una celda de holgura alrededor de los obstáculos; con ese modelo el
   costo de A* coincide en 2 091 mapas (83.4 %) y en el resto A* encuentra uno ligeramente más barato
-  (mediana 0.84 %), nunca uno más caro. En las ciudades (N = 50…200, viento con c(u,v) ≠ c(v,u)) A* expande 51.8 % menos nodos que UCS. IDA*
-  resolvió 23/40 consultas con umbral controlado (IDA*-CR) y 6/40 con el umbral clásico: en rejillas
-  re-expande demasiado.
+  (mediana 0.84 %), nunca uno más caro. En las ciudades (N = 50…200, viento con c(u,v) ≠ c(v,u)) A*
+  expande 47.5 % menos nodos que UCS. IDA* resolvió 25/40 consultas con umbral controlado (IDA*-CR) y
+  7/40 con el umbral clásico: en rejillas re-expande demasiado.
 - **Heurística aprendida** (entrenada con 300 mapas de `train/` de Kaggle): la cota costo ≤ w_P·C* se
   cumplió en el 100 % de las consultas. En la escala de entrenamiento ahorra nodos (en los mapas de
   prueba, 2 389 con el modelo de cuantil 0.2 y 2 835 con MSE contra 3 855 de A*; en las ciudades con
-  N = 100, 445 y 740 contra 949); fuera de ella (N = 200) deja de ayudar.
-- **Carga útil**: 0 discrepancias en las 10 000 instancias de Kaggle; B&B con cota fraccional resuelve
+  N = 100, 699 y 653 contra 857); fuera de ella (N = 200) deja de ayudar.
+- **Carga útil**: 0 discrepancias en las 10 000 instancias de Kaggle (ni en las 9 885 del segundo
+  archivo del dataset); B&B con cota fraccional resuelve
   casi todas las instancias en milisegundos hasta n = 120 (una con kits densos incompatibles llegó al
   límite); GA a 0.34 % del óptimo en promedio; MITM resuelve el "lo más cerca de W" con n = 40.
 - **CSP**: transición de fase clara; MRV es lo que más ayuda y LCV ayuda en las instancias difíciles.
   MAC (AC-3 mantenido) recorre entre 2 y 4.5 veces menos nodos (mediana) que forward checking en la región difícil,
   pero cada nodo cuesta mucho más.
 - **ATSP**: Held–Karp y B&B (cota MST) coinciden con K ≤ 12. Con 3·10⁴ evaluaciones y 10 semillas,
-  ACO+LS (híbrido) fue el mejor con K = 50 (0.45 %) y K = 100 (7.90 %) contra el óptimo exacto de HiGHS.
+  ACO+LS (híbrido) tuvo la menor brecha media con K = 25 (0.07 %), K = 50 (2.22 %) y K = 100 (8.62 %)
+  contra el óptimo exacto de HiGHS.
 
 ## Qué hay aquí
 
@@ -39,7 +41,7 @@ drones/                 biblioteca (todo el código de los algoritmos)
   csp.py                CSP de plataformas/turnos: BT, FC, AC-3, MAC, MRV, LCV, min-conflicts
   atsp.py               Held–Karp, B&B con cota MST, SA, Tabú, GA-OX, ACO (MMAS), UCB-HH, híbridos, HiGHS
   scenario.py           escenario integrado con hospitales reales de Los Ángeles
-  datasets.py           lectura de los datasets (Kaggle o espejos) y proyección a la rejilla
+  datasets.py           lectura de los datasets de Kaggle y proyección a la rejilla
   metrics.py            tiempo, memoria (tracemalloc), CSV
 experiments/            un script por bloque + figuras, tablas LaTeX y panel
 datos/                  datasets usados (ver abajo)
@@ -70,8 +72,8 @@ Después, `cd reporte && pdflatex P1_drones.tex` (dos veces).
 | Kaggle | Fuente usada | Archivo |
 |---|---|---|
 | [2D Path Planning Dataset](https://www.kaggle.com/datasets/dcaffo/2dpathplanningdataset) | **archivo original de Kaggle** (`archive.zip`, 646 MB, descargado el 8 nov 2026); muestra sistemática de 2 506 mapas (uno de cada *k* archivos del zip) | `datos/mapas_kaggle/map_dataset/{train,validation,test}/*.pt` |
-| [US Hospital Locations](https://www.kaggle.com/datasets/andrewmvd/us-hospital-locations) | [CovidCareMap](https://github.com/covidcaremap/covid19-healthsystemcapacity) (incluye el `HIFLD-ID` de cada hospital) | `datos/hospitales_covidcaremap.csv` |
-| [Knapsack Problem Data](https://www.kaggle.com/datasets/warcoder/knapsack-problem) | copia exacta en [Kralog2/Tarea3IA](https://github.com/Kralog2/Tarea3IA) (SHA-256 `55b98b9d…044c`) | `datos/knapsack_5_items.csv` |
+| [US Hospital Locations](https://www.kaggle.com/datasets/andrewmvd/us-hospital-locations) | **archivo original de Kaggle** (descargado el 9 nov 2026); sólo hospitales abiertos (`STATUS = OPEN`) de la zona de Los Ángeles | `datos/us_hospital_locations.csv` |
+| [Knapsack Problem Data](https://www.kaggle.com/datasets/warcoder/knapsack-problem) | **archivos originales de Kaggle** (descargados el 9 nov 2026; SHA-256 de `knapsack_5_items.csv`: `55b98b9d…044c`) | `datos/knapsack_5_items.csv`, `datos/knapsack_5_items_new.csv` |
 
 - La muestra de mapas no está en el repositorio de GitHub (son 2 506 archivos binarios, ≈ 110 MB).
   `datos/mapas_kaggle_lista.txt` tiene sus rutas exactas: descarga
@@ -82,4 +84,3 @@ Después, `cd reporte && pdflatex P1_drones.tex` (dos veces).
   ([dcaffo98/path-planning-cnn](https://github.com/dcaffo98/path-planning-cnn)) que se usaron en la
   primera versión; sólo se usan si `datos/mapas_kaggle/` está vacío (sin los mapas de Kaggle, una
   corrida completa daría otros números que los del reporte).
-- Hospitales: si pones el `us_hospital_locations.csv` original de Kaggle en `datos/`, se usa automáticamente.

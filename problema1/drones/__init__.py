@@ -10,6 +10,6 @@ knapsack  carga útil: backtracking con máscaras de bits, B&B con cota fraccion
 csp       asignación de plataformas y turnos: BT, FC, AC-3 (MAC), MRV/LCV, min-conflicts
 atsp      orden de visitas (TSP asimétrico): Held-Karp, B&B con cota MST, SA, Tabu, GA-OX,
           ACO (MMAS), hiperheurística UCB e híbridos
-datasets  lectura de los datasets (Kaggle o espejos) y proyección de hospitales a la rejilla
+datasets  lectura de los datasets de Kaggle y proyección de hospitales a la rejilla
 metrics   medición de tiempo, memoria y factor de ramificación efectivo
 """

@@ -36,26 +36,34 @@ def _pairs(term, N, n_queries=20):
     return pairs
 
 
-def busqueda_rejillas():
-    """IDA* clásico (con TT) en las 3 primeras consultas de cada N."""
+def _mem_ida_clasico(task):
+    N, q, lim = task
+    city, term, _ = build_scenario(N, 25, hospitals_csv(), seed=0, city_seed=N)
+    succ = city.successors()
+    s, g = _pairs(term, N)[q]
+    hl = city.h_admissible(g).tolist()
+    _, mem = peak_memory(lambda: ida_star(succ, s, g, hl, mode="classic", tt=True,
+                                          node_limit=lim + 1, time_limit=None))
+    return N, q, mem
+
+
+def busqueda_rejillas(workers: int = 2):
+    """IDA* clásico (con TT) en las 3 primeras consultas de cada N. Guarda después de cada
+    medición y se salta las que ya están, así que se puede interrumpir y volver a correr."""
+    from multiprocessing import Pool
     path = RES / "busqueda_rejillas.csv"
     d = pd.read_csv(path)
+    tasks = []
     for N in sorted(d.N.unique()):
-        city, term, _ = build_scenario(int(N), 25, hospitals_csv(), seed=0, city_seed=int(N))
-        succ = city.successors()
-        pairs = _pairs(term, int(N))
         for q in range(3):
             sel = (d.N == N) & (d.consulta == q) & (d.metodo == "IDA*")
-            if not sel.any() or d.loc[sel, "mem_kib"].notna().all():
-                continue
-            s, g = pairs[q]
-            hl = city.h_admissible(g).tolist()
-            lim = int(d.loc[sel, "exp"].iloc[0])
-            _, mem = peak_memory(lambda: ida_star(succ, s, g, hl, mode="classic", tt=True,
-                                                  node_limit=lim + 1, time_limit=None))
-            d.loc[sel, "mem_kib"] = mem
+            if sel.any() and d.loc[sel, "mem_kib"].isna().any():
+                tasks.append((int(N), q, int(d.loc[sel, "exp"].iloc[0])))
+    with Pool(workers) as pool:
+        for N, q, mem in pool.imap_unordered(_mem_ida_clasico, tasks):
+            d.loc[(d.N == N) & (d.consulta == q) & (d.metodo == "IDA*"), "mem_kib"] = mem
+            d.to_csv(path, index=False)
             print("IDA*", N, q, round(mem, 1), flush=True)
-        d.to_csv(path, index=False)
 
 
 def busqueda_ida_pequenas():

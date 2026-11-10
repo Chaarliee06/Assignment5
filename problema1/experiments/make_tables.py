@@ -62,8 +62,13 @@ def t_busqueda():
         num("valMenorHolg", int((rh < 1 - 1e-9).sum()))
         num("valMedExcHolg", f(100 * (rh[rh > 1 + 1e-9].median() - 1), 2))
         num("valMaxExcHolg", f(100 * (rh.max() - 1), 1))
-    from drones.datasets import list_map_files
-    from .common import MAPAS_KAGGLE
+    from drones.datasets import LA_BBOX, list_map_files, load_hospitals, region
+    from .common import MAPAS_KAGGLE, hospitals_csv
+    hosp_raw = pd.read_csv(hospitals_csv(), low_memory=False)
+    num("hospTotal", f(len(hosp_raw), 0))
+    if "STATUS" in hosp_raw:
+        num("hospAbiertos", f(int(hosp_raw.STATUS.astype(str).str.upper().eq("OPEN").sum()), 0))
+    num("hospRegion", f(len(region(load_hospitals(hospitals_csv()), LA_BBOX)), 0))
     from .extraer_mapas_kaggle import LISTA, leer_lista
     files = [x.replace("\\", "/") for x in list_map_files(str(MAPAS_KAGGLE))]
     if not files and LISTA.exists():   # sin los .pt (p. ej. en el repo de GitHub) se usa la lista
@@ -100,6 +105,12 @@ def t_busqueda():
     a = d[d.metodo == "A*"]
     u = d[d.metodo == "UCS"]
     num("redAvsUCS", f(100 * (1 - a.exp.sum() / u.exp.sum()), 1))
+    eb = d[d.metodo.isin(["UCS", "A*"]) & (d.estado == "ok")].groupby(["N", "metodo"]).ebf.mean()
+    num("ebfMin", f(eb.min(), 2))
+    num("ebfMax", f(eb.max(), 2))
+    mm = d.groupby("N").m_min.first()
+    num("mminMin", f(mm.min(), 2))
+    num("mminMax", f(mm.max(), 2))
     cr = d[(d.metodo == "IDA*-CR")]
     ida = d[(d.metodo == "IDA*")]
     num("idaCrResueltas", f"{int((cr.estado == 'ok').sum())}/{len(cr)}")
@@ -196,6 +207,12 @@ def t_mochila():
         num(f"kagT{key}", f(float(k[k.metodo == m].tiempo_medio_us.iloc[0]), 0))
         if "mem_kib" in k:
             num(f"kagMem{key}", f(float(k[k.metodo == m].mem_kib.iloc[0]), 1))
+    kn = RES / "mochila_kaggle_new.csv"
+    if kn.exists():
+        kn = pd.read_csv(kn)
+        num("kagNewInst", f(int(kn.instancias.iloc[0]), 0))
+        num("kagNewDisc", int(kn[kn.metodo != "best_picks_consistentes"].discrepancias.sum()))
+        num("kagNewPicks", int(kn[kn.metodo == "best_picks_consistentes"].discrepancias.sum()))
     bt = pd.read_csv(RES / "mochila_backtracking.csv")
     for n in sorted(bt.n.unique()):
         for m, key in (("BT con cota", "Con"), ("BT sin cota", "Sin")):
@@ -417,7 +434,7 @@ def t_atsp():
     body = ("\\begin{tabular}{r" + "r" * len(meths) + "}\n\\toprule\n$K$ & " + " & ".join(esc(m) for m in meths) +
             " \\\\\n\\midrule\n" + "\n".join(lines) + "\n\\bottomrule\n\\end{tabular}\n")
     write("tab_atsp_tiempo.tex", body)
-    for m, key in (("ACO (MMAS)", "Aco"), ("SA", "Sa"), ("GA-OX", "Ga"), ("Tabu", "Tabu")):
+    for m, key in (("ACO (MMAS)", "Aco"), ("SA", "Sa"), ("GA-OX", "Ga"), ("Tabu", "Tabu"), ("UCB-HH", "Ucb")):
         q = meta[(meta.K == meta.K.max()) & (meta.metodo == m)].mem_kib.dropna()
         num(f"memMeta{key}", f(q.mean(), 0) if len(q) else "--")
     g = meta.groupby(["K", "metodo"]).brecha_pct.mean().unstack()
@@ -427,6 +444,13 @@ def t_atsp():
         num(f"mejorGapK{int(K)}", f(g.loc[K].min(), 2))
         for m, key in zip(meths, ("Sa", "Tabu", "Ga", "Aco", "Ucb", "Mem", "AcoLs")):
             num(f"gap{key}K{int(K)}", f(g.loc[K, m], 2))
+    num("peorGapK12", f(g.loc[12].max(), 2))
+    num("tAcoLsMax", f(meta[meta.metodo == "ACO+LS"].groupby("K").t_s.mean().max(), 2))
+    num("corridasMeta", f(len(meta), 0))
+    num("metaMasBaratas", int((meta.brecha_pct < -1e-7).sum()))   # corridas mejores que el "óptimo"
+    gNK = meta[meta.K >= 50].groupby(["N", "K", "metodo"]).brecha_pct.mean().unstack()
+    num("acoLsMejores", int((gNK["ACO+LS"] <= gNK.min(axis=1) + 1e-9).sum()))
+    num("acoLsCombos", len(gNK))
     num("milpMaxT", f(inst.t_milp_s.max(), 1))
     num("apGap", f(100 * (1 - (inst.AP / inst.opt)).mean(), 1))
     num("asimMedia", f(100 * inst.asimetria.mean(), 1))
@@ -445,6 +469,36 @@ def t_atsp():
         num("ucbSwap", f(100 * tot[0], 1))
         num("ucbIns", f(100 * tot[1], 1))
         num("ucbTwo", f(100 * tot[2], 1))
+    # Convergencia con el K más grande: tramo de evaluaciones en que ACO va al frente en todas las rejillas
+    Kmax = int(meta.K.max())
+    desde, hasta, temprano, mejora_otros = [], [], [], []
+    for N in sorted(meta.N.unique()):
+        opt = float(inst[(inst.N == N) & (inst.K == Kmax)].opt.iloc[0])
+        gaps = {}
+        for m in meths:
+            runs = curves[f"{N}|{Kmax}|{m}"]
+            ev = np.array([p[0] for p in next(iter(runs.values()))])
+            arr = np.array([[p[1] for p in r] for r in runs.values()])
+            gaps[m] = 100 * (arr.mean(axis=0) / opt - 1)
+        G = pd.DataFrame(gaps, index=ev)
+        otros = G.drop(columns="ACO (MMAS)")
+        lidera = (G["ACO (MMAS)"] <= otros.min(axis=1)).to_numpy()
+        mejor, ini = (0, 0, 0), None            # (longitud, inicio, fin) del tramo contiguo más largo
+        for i, v in enumerate(list(lidera) + [False]):
+            if v and ini is None:
+                ini = i
+            elif not v and ini is not None:
+                mejor = max(mejor, (i - ini, ini, i - 1))
+                ini = None
+        desde.append(int(ev[mejor[1]]) if mejor[0] else 10 ** 9)
+        hasta.append(int(ev[mejor[2]]) if mejor[0] else 0)
+        temprano.append(float(G["ACO (MMAS)"].loc[1500]))
+        mejora_otros.append(float((otros.loc[24000] - otros.loc[30000]).min()))
+    ok = max(desde) <= min(hasta)
+    num("acoLiderDesde", f(max(desde), 0) if ok else "--")
+    num("acoLiderHasta", f(min(hasta), 0) if ok else "--")
+    num("acoGapTemprano", f(float(np.mean(temprano)), 1))
+    num("otrosMejoraFinalMin", f(min(mejora_otros), 2))   # puntos de brecha en las últimas 6 000 evaluaciones
 
 
 def write_numbers():

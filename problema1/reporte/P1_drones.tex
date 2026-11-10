@@ -138,15 +138,13 @@ clínica más costosa.}
 \section{Datasets}\label{sec:datos}
 %=====================================================================
 
-Los mapas son los archivos originales del \emph{2D Path Planning Dataset} de Kaggle. Para los otros
-dos datasets se usaron copias públicas: una copia exacta del archivo de la mochila y una base de hospitales con la misma
-fuente (HIFLD). La Tabla~\ref{tab:datos} documenta cada una. El código también lee el CSV original de
-hospitales de Kaggle si se coloca en \texttt{datos/}.
+Los tres datasets son los archivos originales descargados de Kaggle. La Tabla~\ref{tab:datos}
+documenta cada uno y su preprocesamiento.
 
 \begin{table}[H]
 \centering\small
-\caption{Datasets usados. Fechas de descarga: 8 de noviembre de 2026 (mapas) y 3 de noviembre de
-2026 (hospitales y mochila).}\label{tab:datos}
+\caption{Datasets usados (archivos originales de Kaggle). Fechas de descarga: 8 de noviembre de 2026
+(mapas) y 9 de noviembre de 2026 (hospitales y mochila).}\label{tab:datos}
 \begin{tabular}{p{2.7cm}p{5.3cm}p{7.6cm}}
 \toprule
 Dataset (Kaggle) & Fuente usada & Preprocesamiento \\
@@ -165,20 +163,21 @@ con \hTest{} de \texttt{test} (muestras con semilla 0). \\
 \addlinespace
 US Hospital Locations\newline
 \scriptsize\url{kaggle.com/datasets/andrewmvd/us-hospital-locations} &
-CovidCareMap, \scriptsize\url{github.com/covidcaremap/covid19-healthsystemcapacity}
-({\scriptsize\path{us_healthcare_capacity-facility-CovidCareMap.csv}}); cada fila trae su \texttt{HIFLD-ID}, la
-misma fuente HIFLD del dataset de Kaggle &
-Filtro a la caja $33.70\le\text{lat}\le34.35$, $-118.70\le\text{lon}\le-117.90$ (127 hospitales),
-sin coordenadas repetidas; proyección lineal a la rejilla y ajuste a la celda libre más cercana. \\
+Archivo original de Kaggle (\texttt{us\_hospital\_locations.csv}): \hospTotal{} hospitales de
+HIFLD con nombre, coordenadas, camas y estado &
+Sólo hospitales abiertos (\texttt{STATUS} $=$ \texttt{OPEN}, \hospAbiertos); filtro a la caja
+$33.70\le\text{lat}\le34.35$, $-118.70\le\text{lon}\le-117.90$ (\hospRegion{} hospitales), sin
+coordenadas repetidas; proyección lineal a la rejilla y ajuste a la celda libre más cercana. \\
 \addlinespace
 Knapsack Problem Data\newline
 \scriptsize\url{kaggle.com/datasets/warcoder/knapsack-problem} &
-Copia exacta \texttt{knapsack\_5\_items.csv} en \scriptsize\url{github.com/Kralog2/Tarea3IA}
-(SHA-256 \texttt{55b98b9d\ldots044c}) &
+Archivo original de Kaggle: \texttt{knapsack\_5\_items.csv} (SHA-256
+\texttt{55b98b9d\ldots044c}) y \texttt{knapsack\_5\_items\_new.csv} &
 10\,000 instancias de 5 kits (peso, precio, capacidad, solución óptima). Se parsean los arreglos en
 texto; 121 filas con \emph{Best picks} vacío (ningún kit cabe, \emph{Best price}$=0$) se toman como
 el vector cero. Los $50\,000$ kits forman el \emph{pool} del que se muestrean instancias de
-$n=10$ a $120$. \\
+$n=10$ a $120$. El segundo archivo (\kagNewInst{} instancias con columnas \texttt{W1}--\texttt{W5},
+\texttt{P1}--\texttt{P5} y \texttt{BP1}--\texttt{BP5}) se usa como validación adicional. \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -257,8 +256,8 @@ Lo principal:
 \begin{itemize}
 \item UCS, A* e IDA*-CR (cuando termina) son óptimos en todas las consultas. A* expande
 \redAvsUCS\,\% menos nodos que UCS en total. La ganancia es moderada porque $h$ es conservadora
-($m_{\min}$ entre 0.51 y 0.58).
-\item El $b^*$ de UCS y A* queda entre 1.2 y 1.4 porque $d$ es grande (del orden de $N$); sirve más
+($m_{\min}$ entre \mminMin{} y \mminMax).
+\item El $b^*$ de UCS y A* queda cerca de 1 (entre \ebfMin{} y \ebfMax) porque $d$ es grande (del orden de $N$); sirve más
 para comparar métodos en una misma consulta que entre tamaños. El de IDA* es mucho mayor porque
 cuenta todos los nodos generados en todas las iteraciones.
 \item IDA* resolvió \idaCrResueltas{} consultas con la política CR y sólo \idaResueltas{} con la
@@ -317,7 +316,7 @@ En los mapas de prueba el modelo MSE llegó a $w_P=\hWmaxMse$ ($w_{\text{all}}$ 
 brecha media de \hGapMse\,\% y máxima de \hGapMaxMse\,\%; el de cuantil, más conservador, tuvo
 $w_P\le\hWmaxQ$ y brecha media de \hGapQ\,\% (máxima \hGapMaxQ\,\%). En las ciudades, fuera de la
 escala de entrenamiento, $w_P$ llegó a \rWmaxMse{} (MSE) y \rWmaxQ{} (cuantil): la cota se sigue
-cumpliendo, pero ya no dice mucho.
+cumpliendo, pero con el modelo MSE ya no dice mucho.
 
 \begin{table}[t]
 \centering\scriptsize
@@ -348,8 +347,8 @@ falla en todas las consultas, sino que algunas explotan: las distancias salen de
 árboles de decisión no extrapolan y la heurística se vuelve muy inconsistente. Además, calcular $h_\theta$ en toda la rejilla cuesta
 \rInfNBAA\,ms con $N=100$ y \rInfNCAA\,ms con $N=200$, más que toda la búsqueda de A*.
 
-A* ponderado con $w=1.5$ expandió menos nodos en todos los tamaños con una cota \emph{demostrable} de
-$1.5\,C^*$. La heurística aprendida sólo conviene si su inferencia se amortiza (muchas consultas con la
+A* ponderado con $w=1.5$ expandió menos nodos que A* en todos los tamaños, y menos que la heurística
+aprendida a partir de $N=100$, con una cota \emph{demostrable} de $1.5\,C^*$. La heurística aprendida sólo conviene si su inferencia se amortiza (muchas consultas con la
 misma meta), si las consultas se parecen a las de entrenamiento y si se acepta que su $w$ es una
 cantidad \emph{medida}, no garantizada.
 
@@ -397,7 +396,9 @@ $1000\,w_i+v_i$ (gramos) para que llegar exactamente a $W$ no sea trivial.
 
 \paragraph{Validación con Kaggle.} En las \kagInst{} instancias, backtracking, B\&B (DFS y
 mejor-primero), MITM y una DP de control reprodujeron \emph{Best price} sin ninguna discrepancia
-(\kagDisc), y todos los \emph{Best picks} del dataset son factibles y alcanzan ese valor. Tiempo medio
+(\kagDisc), y todos los \emph{Best picks} del dataset son factibles y alcanzan ese valor. En el
+segundo archivo del dataset (\kagNewInst{} instancias) tampoco hubo discrepancias (\kagNewDisc) ni
+\emph{Best picks} inconsistentes (\kagNewPicks). Tiempo medio
 por instancia: \kagTBt\,$\mu$s (BT), \kagTBnb\,$\mu$s (B\&B), \kagTMitm\,$\mu$s (MITM). Con 5 kits la
 memoria es mínima: el pico por instancia (el máximo en 200 instancias) fue de \kagMemBt\,KiB (BT),
 \kagMemBnb\,KiB (B\&B DFS), \kagMemBest\,KiB (mejor-primero), \kagMemMitm\,KiB (MITM) y \kagMemDp\,KiB (DP).
@@ -556,9 +557,9 @@ cota inicial, con la cota del vecino más cercano (VMC) y con la de ACO+LS (híb
 bioinspirado). Held--Karp ($O(2^KK^2)$) y la fuerza bruta ($K\le8$) sirven de control. Para
 $K>12$ el óptimo se obtuvo con HiGHS: formulación de asignación con cortes de 2-ciclos y cortes de
 subciclos de Dantzig--Fulkerson--Johnson agregados de forma perezosa (a lo sumo \milpMaxT\,s por
-instancia). Como HiGHS declara óptimo dentro de una tolerancia relativa ($10^{-4}$ por omisión), las 16
-instancias se resolvieron otra vez con tolerancia 0 y los óptimos fueron idénticos; además, ninguna de
-las 1\,120 corridas de metaheurísticas encontró un recorrido más barato. La relajación de asignación
+instancia). HiGHS declara óptimo dentro de una tolerancia relativa ($10^{-4}$ por omisión); aquí se
+fijó en 0 (\texttt{mip\_rel\_gap}$=0$) y, como comprobación independiente, \metaMasBaratas{} de las
+\corridasMeta{} corridas de metaheurísticas encontraron un recorrido más barato. La relajación de asignación
 (AP) queda en promedio \apGap\,\% por debajo del óptimo.
 
 \begin{table}[t]
@@ -643,26 +644,31 @@ número de evaluaciones.}
 \input{tablas/tab_atsp_tiempo.tex}
 \end{table}
 
-\paragraph{Resultados.} Con $K=12$ todos los métodos quedan a menos de 0.2\,\% del óptimo, y SA, Tabú y
-UCB-HH lo encuentran en las 40 corridas. La diferencia aparece al crecer $K$: el mejor promedio fue
-\mejorKCF{} con $K=25$ (\mejorGapKCF\,\%), \mejorKFA{} con $K=50$ (\mejorGapKFA\,\%) y \mejorKBAA{}
-con $K=100$ (\mejorGapKBAA\,\%). Con $K=100$ las brechas medias fueron: SA \gapSaKBAA, Tabú
+\paragraph{Resultados.} Con $K=12$ la brecha media de todos los métodos, promediada sobre las cuatro
+rejillas, es de \peorGapKBC\,\% o menos, y SA, Tabú y UCB-HH encuentran el óptimo en sus 40 corridas. La diferencia aparece al crecer $K$: ACO+LS tuvo
+el mejor promedio con $K=25$ (\gapAcoLsKCF\,\%), $K=50$ (\gapAcoLsKFA\,\%) y $K=100$
+(\gapAcoLsKBAA\,\%). Con $K=100$ las brechas medias fueron: SA \gapSaKBAA, Tabú
 \gapTabuKBAA, GA-OX \gapGaKBAA, ACO \gapAcoKBAA, UCB-HH \gapUcbKBAA, memético \gapMemKBAA{} y ACO+LS
 \gapAcoLsKBAA\,\%. Algunas conclusiones:
 \begin{itemize}
 \item El GA puro es el más débil con presupuesto fijo: OX conserva el orden relativo, pero recombinar
 sin búsqueda local avanza muy despacio en un espacio de $K!$ permutaciones. Agregarle búsqueda local
-(memético) reduce su brecha a la cuarta parte con $K=100$.
-\item ACO+LS fue el más robusto para $K\ge50$: la feromona concentra la construcción en aristas
+(memético) baja su brecha de \gapGaKBAA\,\% a \gapMemKBAA\,\% con $K=100$.
+\item ACO+LS fue el más robusto: tuvo el mejor promedio en \acoLsMejores{} de las \acoLsCombos{}
+combinaciones $(N,K)$ con $K\ge50$. La feromona concentra la construcción en aristas
 buenas y la búsqueda local granular corrige el detalle. ACO sin búsqueda local también escala bien
 en calidad, pero es el más lento con $K=100$ porque cada construcción cuesta $O(K^2)$.
-\item UCB-HH superó a SA, que usa la misma aceptación y temperatura pero elige el operador al azar,
-en $K=50$ y $K=100$. En promedio UCB eligió 2-opt el \ucbTwo\,\%, inserción el \ucbIns\,\% y swap el
+\item UCB-HH superó en promedio a SA, que usa la misma aceptación y temperatura pero elige el operador
+al azar, con $K=50$ y $K=100$ (\gapUcbKFA{} contra \gapSaKFA\,\% y \gapUcbKBAA{} contra \gapSaKBAA\,\%). En promedio UCB eligió 2-opt el \ucbTwo\,\%, inserción el \ucbIns\,\% y swap el
 \ucbSwap\,\% de las veces (Figura~\ref{fig:ucb}): aprendió que invertir segmentos mejora más seguido.
 \item El tamaño de la rejilla $N$ no muestra una tendencia clara: sólo cambia la matriz $C$, y la
 brecha depende sobre todo de $K$.
-\item Con $K=100$ las curvas de la Figura~\ref{fig:conv} siguen bajando al final del presupuesto: con
-más evaluaciones todos mejorarían, y el orden entre métodos se mantiene a lo largo de la curva.
+\item Con $K=100$ el orden entre métodos depende del presupuesto (Figura~\ref{fig:conv}). ACO baja a
+\acoGapTemprano\,\% en las primeras 1\,500 evaluaciones y después mejora muy despacio (termina en
+\gapAcoKBAA\,\%): en las cuatro rejillas tiene la menor brecha media entre las evaluaciones
+\acoLiderDesde{} y \acoLiderHasta, y sólo al final lo superan otros métodos. Los demás siguen bajando al
+agotar el presupuesto (al menos \otrosMejoraFinalMin{} puntos de brecha en las últimas 6\,000
+evaluaciones), así que con más evaluaciones mejorarían.
 \end{itemize}
 
 \begin{figure}[H]
@@ -712,16 +718,17 @@ promedio). IDA* sin tabla de transposición sólo guarda la pila ($O(d)$), pero 
 vuelve impráctico; con la tabla vuelve a $O(V)$ (\memIdaCrNCAA\,KiB para IDA*-CR con $N=200$). En la
 mochila, la DFS guarda una rama ($O(n)$) y mejor-primero toda la frontera (hasta \bnbBestMemMax\,MiB),
 y MITM sus $2^{n/2}$ subconjuntos por mitad (\mitmMem\,MiB con $n=40$). Held--Karp necesita su tabla de
-$2^K K$ estados, MAC una cola de hasta $O(D^2)$ arcos, ACO la matriz de feromona $O(K^2)$
-(\memMetaAco\,KiB con $K=100$) y SA, Tabú y UCB-HH sólo un par de permutaciones (\memMetaSa{} y
-\memMetaTabu\,KiB).
+$2^K K$ estados, MAC una cola de hasta $O(D^2)$ arcos y ACO la matriz de feromona $O(K^2)$
+(\memMetaAco\,KiB con $K=100$). SA y UCB-HH sólo guardan un par de permutaciones (\memMetaSa{} y
+\memMetaUcb\,KiB); Tabú, además, las listas de predecesores más baratos, que obtiene ordenando $C$
+(\memMetaTabu\,KiB).
 
 En resumen, para las decisiones que sí admiten demostración en el tiempo disponible conviene usar
 los métodos exactos con buenas cotas: A* con la heurística consistente para las rutas (milisegundos en
 rejillas de $200\times200$), B\&B con cota fraccional para la carga (casi siempre en milisegundos con
 $n\le120$, aunque con instancias difíciles cuando los kits densos son incompatibles) y Held--Karp para
-$K\le12$. Cuando el problema crece, las metaheurísticas híbridas dan buenas soluciones en menos de un
-segundo (ACO+LS: \mejorGapKFA\,\% con $K=50$ y \mejorGapKBAA\,\% con $K=100$), pero sólo un método
+$K\le12$. Cuando el problema crece, el híbrido ACO+LS da buenas soluciones en menos de un segundo por
+corrida (\gapAcoLsKFA\,\% con $K=50$ y \gapAcoLsKBAA\,\% con $K=100$), pero sólo un método
 exacto (aquí HiGHS con cortes, hasta \milpMaxT\,s) puede certificar la brecha. La heurística aprendida
 muestra el intercambio central: renuncia a las garantías a cambio de información; en la escala de
 entrenamiento ahorra nodos, fuera de ella deja de ayudar, y A* ponderado da un ahorro parecido con una

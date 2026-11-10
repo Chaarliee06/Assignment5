@@ -2,6 +2,7 @@
 
 kaggle      las 10 000 instancias de Knapsack Problem Data: BT, B&B (DFS y mejor-primero),
             MITM y DP deben reproducir "Best price".
+kaggle_new  lo mismo con el segundo archivo del dataset (knapsack_5_items_new.csv).
 backtrack   backtracking con máscaras de bits, n ∈ {10,…,30}, con y sin cota.
 bnb         B&B con cota fraccional, n ∈ {30, 60, 90, 120}; GA (10 semillas) como base
             bioinspirada; verificación con HiGHS.
@@ -15,18 +16,25 @@ import time
 
 import numpy as np
 
-from drones.datasets import kit_pool, load_knapsack_kaggle
+from drones.datasets import kit_pool, load_knapsack_kaggle, load_knapsack_kaggle_new
 from drones.knapsack import (KnapInstance, knap_backtracking, knap_bnb, knap_dp, knap_ga,
                              knap_milp, knap_mitm, make_instance)
 from drones.metrics import peak_memory, write_csv
 
-from .common import KNAPSACK, RES
+from .common import KNAPSACK, KNAPSACK_NEW, RES
 
 N_INST = 10
 
 
 def parte_kaggle():
-    df = load_knapsack_kaggle(str(KNAPSACK))
+    _validar_kaggle(load_knapsack_kaggle(str(KNAPSACK)), "mochila_kaggle.csv")
+
+
+def parte_kaggle_new():
+    _validar_kaggle(load_knapsack_kaggle_new(str(KNAPSACK_NEW)), "mochila_kaggle_new.csv")
+
+
+def _validar_kaggle(df, salida: str):
     rows = []
     totals = {k: 0.0 for k in ("bt", "bnb", "bnb_best", "mitm", "dp")}
     mism = {k: 0 for k in totals}
@@ -49,7 +57,7 @@ def parte_kaggle():
         rows.append({"metodo": key, "instancias": len(df), "discrepancias": mism[key],
                      "tiempo_total_s": totals[key], "tiempo_medio_us": 1e6 * totals[key] / len(df)})
     rows.append({"metodo": "best_picks_consistentes", "instancias": len(df), "discrepancias": len(df) - picks_ok})
-    write_csv(str(RES / "mochila_kaggle.csv"), rows)
+    write_csv(str(RES / salida), rows)
     print(rows)
 
 
@@ -145,10 +153,12 @@ def parte_mitm(sizes=(20, 24, 28, 32, 36, 40)):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--parte", default="todo", choices=["kaggle", "backtrack", "bnb", "mitm", "todo"])
+    ap.add_argument("--parte", default="todo", choices=["kaggle", "kaggle_new", "backtrack", "bnb", "mitm", "todo"])
     a = ap.parse_args()
     if a.parte in ("kaggle", "todo"):
         parte_kaggle()
+    if a.parte in ("kaggle_new", "todo"):
+        parte_kaggle_new()
     if a.parte in ("backtrack", "todo"):
         parte_backtrack()
     if a.parte in ("bnb", "todo"):

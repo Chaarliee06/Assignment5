@@ -7,10 +7,10 @@ Datasets sugeridos (Kaggle)
   `start`, `goal` y `path` (camino de D* Lite). Aquí se leen tanto esos .pt originales
   como los .npz reproducidos con el generador oficial (mismos campos).
 * US Hospital Locations — https://www.kaggle.com/datasets/andrewmvd/us-hospital-locations
-  (HIFLD). Se aceptan el CSV de Kaggle (columnas NAME, LATITUDE, LONGITUDE, BEDS, …) o el
-  CSV de CovidCareMap (Name, Latitude, Longitude, Staffed All Beds, HIFLD-ID, …).
+  (HIFLD). us_hospital_locations.csv: columnas NAME, LATITUDE, LONGITUDE, BEDS, STATUS, ID, …
 * Knapsack Problem Data — https://www.kaggle.com/datasets/warcoder/knapsack-problem
-  knapsack_5_items.csv: 10 000 instancias de 5 objetos con la solución óptima.
+  knapsack_5_items.csv: 10 000 instancias de 5 objetos con la solución óptima;
+  knapsack_5_items_new.csv: 9 885 instancias en columnas W1..W5, P1..P5, BP1..BP5.
 """
 from __future__ import annotations
 
@@ -47,6 +47,22 @@ def load_knapsack_kaggle(path: str) -> pd.DataFrame:
         "best_price": raw["Best price"].astype(float),
     })
     return out
+
+
+def load_knapsack_kaggle_new(path: str) -> pd.DataFrame:
+    """knapsack_5_items_new.csv (segundo archivo del mismo dataset): columnas W1..W5, P1..P5,
+    Capacity, BP1..BP5 y Best price. Devuelve el mismo formato que load_knapsack_kaggle."""
+    raw = pd.read_csv(path)
+    w = raw[[f"W{i}" for i in range(1, 6)]].to_numpy().round().astype(int)
+    p = raw[[f"P{i}" for i in range(1, 6)]].to_numpy().round().astype(int)
+    bp = raw[[f"BP{i}" for i in range(1, 6)]].to_numpy().round().astype(int)
+    return pd.DataFrame({
+        "weights": list(w),
+        "prices": list(p),
+        "capacity": raw["Capacity"].round().astype(int),
+        "best_picks": list(bp),
+        "best_price": raw["Best price"].astype(float),
+    })
 
 
 def kit_pool(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
